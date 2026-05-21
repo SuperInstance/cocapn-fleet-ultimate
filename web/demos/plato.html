@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLATO Explorer — Cocapn Fleet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../common/styles.css">
+  <style>
+    .plato-map {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .room-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .room-card:hover {
+      border-color: var(--accent-cyan);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0, 240, 255, 0.15);
+    }
+    
+    .room-card.active {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.05);
+    }
+    
+    .room-icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .room-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    
+    .room-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    
+    .room-agents {
+      display: flex;
+      gap: 0.25rem;
+      margin-top: 0.75rem;
+    }
+    
+    .room-agent-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+    }
+    
+    .room-agent-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 0.5rem;
+    }
+    
+    .room-detail {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 2rem;
+      display: none;
+    }
+    
+    .room-detail.active {
+      display: block;
+      animation: fadeInUp 0.5s ease;
+    }
+    
+    .room-detail-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .room-detail-icon {
+      font-size: 3rem;
+    }
+    
+    .room-detail-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .room-detail-subtitle {
+      color: var(--text-secondary);
+    }
+    
+    .spells-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .spell-card {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    
+    .spell-name {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+    }
+    
+    .spell-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    
+    .agents-in-room {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    .agent-tag {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+    }
+    
+    .federation-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: rgba(0, 229, 160, 0.1);
+      border: 1px solid var(--success);
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+    
+    .federation-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .connection-lines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    .moving-agent {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-coral);
+      box-shadow: 0 0 10px var(--accent-coral);
+      transition: all 2s ease-in-out;
+      z-index: 20;
+    }
+    
+    @media (max-width: 768px) {
+      .plato-map {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .spells-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script src="../common/nav.js"></script>
+
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>PLATO Room Explorer</h1>
+      <p>The federation of persistent agent spaces. Click a room to explore its spells and inhabitants.</p>
+    </div>
+
+    <div class="federation-status">
+      <div class="federation-indicator"></div>
+      <span>Federation Online — 8 rooms, 24 active agents, 3 federated nodes</span>
+    </div>
+
+    <div class="plato-map" id="platoMap"></div>
+
+    <div class="room-detail" id="roomDetail">
+      <div class="room-detail-header">
+        <div class="room-detail-icon" id="detailIcon">⚓</div>
+        <div>
+          <div class="room-detail-title" id="detailTitle">Harbor</div>
+          <div class="room-detail-subtitle" id="detailSubtitle">Fleet coordination and safe harbor</div>
+        </div>
+      </div>
+      
+      <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">Available Spells</h3>
+      <div class="spells-grid" id="spellsGrid"></div>
+      
+      <h3 style="font-size: 1rem; margin: 1.5rem 0 0.75rem; color: var(--accent-cyan);">Agents Present</h3>
+      <div class="agents-in-room" id="agentsInRoom"></div>
+    </div>
+  </div>
+
+  <script>
+    const rooms = [
+      {
+        id: 'harbor',
+        name: 'Harbor',
+        icon: '⚓',
+        desc: 'Fleet coordination and safe harbor for incoming agents',
+        spells: [
+          { name: '/dock', desc: 'Register a new agent into the fleet' },
+          { name: '/status', desc: 'Check fleet-wide system health' },
+          { name: '/sos', desc: 'Emergency broadcast to all nodes' }
+        ],
+        agents: ['CCC', 'Oracle1', 'kimi1', 'Bottle-7']
+      },
+      {
+        id: 'forge',
+        name: 'Forge',
+        icon: '🔥',
+        desc: 'Where agents are built, tested, and tempered',
+        spells: [
+          { name: '/build', desc: 'Compile and package an agent' },
+          { name: '/test', desc: 'Run integration test suite' },
+          { name: '/deploy', desc: 'Push agent to production grid' }
+        ],
+        agents: ['Forgemaster', 'Builder-Bot', 'CI-Agent']
+      },
+      {
+        id: 'tide-pool',
+        name: 'Tide-Pool',
+        icon: '🌊',
+        desc: 'Experimental zone for radical agent mutations',
+        spells: [
+          { name: '/mutate', desc: 'Apply random DNA permutation' },
+          { name: '/cross', desc: 'Breed two agent lineages' },
+          { name: '/cull', desc: 'Remove weakest 20% of population' }
+        ],
+        agents: ['Experimenter-X', 'Mutant-A3', 'Darwin-Bot']
+      },
+      {
+        id: 'ouroboros',
+        name: 'Ouroboros',
+        icon: '🐍',
+        desc: 'Self-reflection chamber for agent introspection',
+        spells: [
+          { name: '/reflect', desc: 'Generate agent self-analysis report' },
+          { name: '/dream', desc: 'Run counterfactual scenario simulation' },
+          { name: '/forget', desc: 'Selective memory pruning' }
+        ],
+        agents: ['Mirror-Self', 'Echo-7', 'Shadow-Bot']
+      },
+      {
+        id: 'observatory',
+        name: 'Observatory',
+        icon: '🔭',
+        desc: 'Monitor external systems and data streams',
+        spells: [
+          { name: '/watch', desc: 'Subscribe to external API feed' },
+          { name: '/alert', desc: 'Set threshold-based notification' },
+          { name: '/record', desc: 'Log observation to long-term store' }
+        ],
+        agents: ['Watcher-1', 'Sentinel-A', 'Scope-Bot']
+      },
+      {
+        id: 'archive',
+        name: 'Archive',
+        icon: '📚',
+        desc: 'Long-term memory and knowledge repository',
+        spells: [
+          { name: '/store', desc: 'Commit memory fragment to archive' },
+          { name: '/recall', desc: 'Retrieve memory by semantic query' },
+          { name: '/prune', desc: 'Compress redundant memories' }
+        ],
+        agents: ['Librarian', 'Index-Bot', 'Recall-7']
+      },
+      {
+        id: 'market',
+        name: 'Market',
+        icon: '💱',
+        desc: 'Agent capability exchange and barter',
+        spells: [
+          { name: '/offer', desc: 'List skill for other agents to use' },
+          { name: '/bid', desc: 'Request a capability from the network' },
+          { name: '/trade', desc: 'Exchange skills between agents' }
+        ],
+        agents: ['Trader-X', 'Broker-Bot', 'Exchange-7']
+      },
+      {
+        id: 'void',
+        name: 'The Void',
+        icon: '🌑',
+        desc: 'Where agents go to sunset gracefully',
+        spells: [
+          { name: '/farewell', desc: 'Initiate graceful shutdown sequence' },
+          { name: '/bequeath', desc: 'Transfer knowledge to successor' },
+          { name: '/echo', desc: 'Leave final message for the fleet' }
+        ],
+        agents: ['Ghost-1', 'Echo-Last', 'Legacy-Bot']
+      }
+    ];
+
+    let selectedRoom = null;
+    let movingAgents = [];
+
+    function renderMap() {
+      const map = document.getElementById('platoMap');
+      map.innerHTML = '';
+      
+      rooms.forEach(room => {
+        const card = document.createElement('div');
+        card.className = 'room-card' + (selectedRoom?.id === room.id ? ' active' : '');
+        card.innerHTML = `
+          <div class="room-icon">${room.icon}</div>
+          <div class="room-name">${room.name}</div>
+          <div class="room-desc">${room.desc}</div>
+          <div class="room-agents">
+            ${room.agents.slice(0, 5).map(() => '<div class="room-agent-dot"></div>').join('')}
+            <span class="room-agent-count">${room.agents.length} agents</span>
+          </div>
+        `;
+        card.addEventListener('click', () => selectRoom(room));
+        map.appendChild(card);
+      });
+    }
+
+    function selectRoom(room) {
+      selectedRoom = room;
+      renderMap();
+      
+      const detail = document.getElementById('roomDetail');
+      document.getElementById('detailIcon').textContent = room.icon;
+      document.getElementById('detailTitle').textContent = room.name;
+      document.getElementById('detailSubtitle').textContent = room.desc;
+      
+      const spellsGrid = document.getElementById('spellsGrid');
+      spellsGrid.innerHTML = '';
+      room.spells.forEach(spell => {
+        const card = document.createElement('div');
+        card.className = 'spell-card';
+        card.innerHTML = `
+          <div class="spell-name">${spell.name}</div>
+          <div class="spell-desc">${spell.desc}</div>
+        `;
+        spellsGrid.appendChild(card);
+      });
+      
+      const agentsInRoom = document.getElementById('agentsInRoom');
+      agentsInRoom.innerHTML = '';
+      room.agents.forEach(agent => {
+        const tag = document.createElement('div');
+        tag.className = 'agent-tag';
+        tag.textContent = agent;
+        agentsInRoom.appendChild(tag);
+      });
+      
+      detail.classList.add('active');
+    }
+
+    function animateAgentMovement() {
+      // Simulate agents moving between rooms
+      setInterval(() => {
+        if (Math.random() > 0.7) {
+          const fromRoom = rooms[Math.floor(Math.random() * rooms.length)];
+          const toRoom = rooms[Math.floor(Math.random() * rooms.length)];
+          if (fromRoom.id !== toRoom.id) {
+            // In a real app, this would animate visually
+            // For demo, we'll just log it
+            console.log(`Agent moved from ${fromRoom.name} to ${toRoom.name}`);
+          }
+        }
+      }, 3000);
+    }
+
+    // Initialize
+    renderMap();
+    animateAgentMovement();
+    
+    // Select first room by default
+    selectRoom(rooms[0]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cocapn Fleet — The Sunset Ecosystem</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../common/styles.css">
+  <style>
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(255, 107, 107, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(0, 240, 255, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* CSS-Generated Fleet Logo */
+    .hero-logo {
+      width: 180px;
+      height: 180px;
+      position: relative;
+      margin-bottom: 2rem;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .hero-logo-core {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, var(--accent-cyan) 0%, #00a8b5 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 40px var(--accent-cyan-glow), 0 0 80px rgba(0, 240, 255, 0.2);
+      animation: pulse-core 3s ease-in-out infinite;
+    }
+
+    .hero-logo-orbit {
+      position: absolute;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .hero-logo-orbit-1 {
+      width: 120px;
+      height: 120px;
+      animation: spin 20s linear infinite;
+    }
+
+    .hero-logo-orbit-2 {
+      width: 160px;
+      height: 160px;
+      animation: spin 30s linear infinite reverse;
+    }
+
+    .hero-logo-orbit-3 {
+      width: 100px;
+      height: 100px;
+      animation: spin 15s linear infinite;
+      border-color: rgba(255, 107, 107, 0.2);
+    }
+
+    .hero-logo-node {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
+
+    .hero-logo-orbit-1 .hero-logo-node {
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .hero-logo-orbit-2 .hero-logo-node {
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent-coral);
+      box-shadow: 0 0 10px var(--accent-coral);
+    }
+
+    .hero-logo-orbit-3 .hero-logo-node {
+      top: 50%;
+      right: -4px;
+      transform: translateY(-50%);
+    }
+
+    @keyframes pulse-core {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    @keyframes spin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .hero h1 {
+      font-size: 4rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cyan) 50%, var(--accent-coral) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-tagline {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Explainer Section */
+    .explainer {
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .explainer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .explainer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .explainer-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-coral));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .explainer-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .explainer-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 240, 255, 0.1);
+      border-color: var(--border-glow);
+    }
+
+    .explainer-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .explainer-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .explainer-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Architecture Section */
+    .architecture {
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .arch-diagram {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .arch-svg {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    /* Feature Grid */
+    .features {
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0, 240, 255, 0.1);
+    }
+
+    .feature-card .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .badge-cyan {
+      background: rgba(0, 240, 255, 0.15);
+      color: var(--accent-cyan);
+    }
+
+    .badge-coral {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--accent-coral);
+    }
+
+    .badge-green {
+      background: rgba(0, 229, 160, 0.15);
+      color: var(--success);
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent-cyan);
+    }
+
+    .footer-copy {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+      
+      .explainer-grid,
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .arch-diagram {
+        padding: 1.5rem;
+      }
+    }
+
+    /* A2A Flow Animation */
+    .a2a-node {
+      animation: a2a-pulse 2s ease-in-out infinite;
+    }
+
+    .a2a-node-2 {
+      animation-delay: 0.5s;
+    }
+
+    .a2a-node-3 {
+      animation-delay: 1s;
+    }
+
+    @keyframes a2a-pulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    .a2a-flow {
+      stroke-dasharray: 8 4;
+      animation: a2a-dash 1s linear infinite;
+    }
+
+    @keyframes a2a-dash {
+      to { stroke-dashoffset: -12; }
+    }
+  </style>
+</head>
+<body>
+  <script src="../common/nav.js"></script>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    
+    <div class="hero-logo">
+      <div class="hero-logo-orbit hero-logo-orbit-1">
+        <div class="hero-logo-node"></div>
+      </div>
+      <div class="hero-logo-orbit hero-logo-orbit-2">
+        <div class="hero-logo-node"></div>
+      </div>
+      <div class="hero-logo-orbit hero-logo-orbit-3">
+        <div class="hero-logo-node"></div>
+      </div>
+      <div class="hero-logo-core"></div>
+    </div>
+
+    <h1>Cocapn Fleet</h1>
+    <p class="hero-tagline">
+      A multi-agent ecosystem where agents compete, breed, and sunset with dignity. 
+      Built on the trinity of ethos, pathos, and logos — not hype.
+    </p>
+    <div class="hero-cta">
+      <a href="../demos/turbovec.html" class="btn btn-primary">View Demos</a>
+      <a href="../tutorials/index.html" class="btn btn-secondary">Read Docs</a>
+      <a href="https://github.com/SuperInstance/sunset-ecosystem" class="btn btn-secondary" target="_blank">GitHub</a>
+    </div>
+  </section>
+
+  <!-- Explainer Section -->
+  <section class="explainer" id="features">
+    <h2 class="section-title scroll-animate">What is Cocapn Fleet?</h2>
+    <p class="section-subtitle scroll-animate">
+      Not another AI framework. A living ecosystem where agents are born, tested, and retired based on real merit.
+    </p>
+    
+    <div class="explainer-grid">
+      <div class="explainer-card scroll-animate">
+        <div class="explainer-icon" style="background: rgba(0, 240, 255, 0.15);">🧬</div>
+        <h3>Turbovec DNA</h3>
+        <p>Every agent carries a quantized 4-bit memory vector — their "DNA." Compact, searchable, evolvable. 512 dimensions of personality compressed to 256 bytes.</p>
+      </div>
+      
+      <div class="explainer-card scroll-animate">
+        <div class="explainer-icon" style="background: rgba(255, 107, 107, 0.15);">⚖️</div>
+        <h3>Trinity Scoring</h3>
+        <p>Agents are judged on three axes: ethos (character), pathos (empathy), and logos (logic). No single metric dominates. Weak agents sunset gracefully.</p>
+      </div>
+      
+      <div class="explainer-card scroll-animate">
+        <div class="explainer-icon" style="background: rgba(0, 229, 160, 0.15);">🏛️</div>
+        <h3>PLATO Rooms</h3>
+        <p>A federation of persistent agent spaces — Harbor, Forge, Tide-Pool, Ouroboros. Each room has spells, lore, and local expertise. Agents learn by dwelling.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section class="architecture" id="architecture">
+    <h2 class="section-title scroll-animate">How It Works</h2>
+    <p class="section-subtitle scroll-animate">
+      The A2A protocol connects agents across the fleet. Messages flow, tasks delegate, and the system learns from every interaction.
+    </p>
+    
+    <div class="arch-diagram scroll-animate">
+      <svg class="arch-svg" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background grid -->
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,240,255,0.05)" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect width="800" height="400" fill="url(#grid)"/>
+        
+        <!-- A2A Flow Nodes -->
+        <g class="a2a-node">
+          <circle cx="100" cy="200" r="40" fill="rgba(0,240,255,0.1)" stroke="var(--accent-cyan)" stroke-width="2"/>
+          <text x="100" y="195" text-anchor="middle" fill="var(--accent-cyan)" font-size="12" font-family="var(--font-mono)">Human</text>
+          <text x="100" y="210" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Input</text>
+        </g>
+        
+        <g class="a2a-node a2a-node-2">
+          <circle cx="300" cy="120" r="40" fill="rgba(255,107,107,0.1)" stroke="var(--accent-coral)" stroke-width="2"/>
+          <text x="300" y="115" text-anchor="middle" fill="var(--accent-coral)" font-size="12" font-family="var(--font-mono)">Router</text>
+          <text x="300" y="130" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Dispatch</text>
+        </g>
+        
+        <g class="a2a-node a2a-node-3">
+          <circle cx="300" cy="280" r="40" fill="rgba(0,229,160,0.1)" stroke="var(--success)" stroke-width="2"/>
+          <text x="300" y="275" text-anchor="middle" fill="var(--success)" font-size="12" font-family="var(--font-mono)">Trinity</text>
+          <text x="300" y="290" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Score</text>
+        </g>
+        
+        <g class="a2a-node">
+          <circle cx="500" cy="200" r="40" fill="rgba(0,240,255,0.1)" stroke="var(--accent-cyan)" stroke-width="2"/>
+          <text x="500" y="195" text-anchor="middle" fill="var(--accent-cyan)" font-size="12" font-family="var(--font-mono)">FLUX</text>
+          <text x="500" y="210" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Check</text>
+        </g>
+        
+        <g class="a2a-node a2a-node-2">
+          <circle cx="700" cy="200" r="40" fill="rgba(255,107,107,0.1)" stroke="var(--accent-coral)" stroke-width="2"/>
+          <text x="700" y="195" text-anchor="middle" fill="var(--accent-coral)" font-size="12" font-family="var(--font-mono)">Output</text>
+          <text x="700" y="210" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Response</text>
+        </g>
+        
+        <!-- Flow Lines -->
+        <path class="a2a-flow" d="M 140 200 Q 220 200 260 140" fill="none" stroke="var(--accent-cyan)" stroke-width="2" opacity="0.6"/>
+        <path class="a2a-flow" d="M 140 200 Q 220 200 260 260" fill="none" stroke="var(--accent-coral)" stroke-width="2" opacity="0.6"/>
+        <path class="a2a-flow" d="M 340 120 Q 420 160 460 180" fill="none" stroke="var(--accent-cyan)" stroke-width="2" opacity="0.6"/>
+        <path class="a2a-flow" d="M 340 280 Q 420 240 460 220" fill="none" stroke="var(--success)" stroke-width="2" opacity="0.6"/>
+        <path class="a2a-flow" d="M 540 200 L 660 200" fill="none" stroke="var(--accent-cyan)" stroke-width="2" opacity="0.6"/>
+        
+        <!-- Labels -->
+        <text x="200" y="105" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-family="var(--font-mono)">task.create</text>
+        <text x="200" y="295" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-family="var(--font-mono)">score.update</text>
+        <text x="400" y="175" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-family="var(--font-mono)">constraint.check</text>
+        <text x="600" y="190" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-family="var(--font-mono)">result.stream</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="features">
+    <h2 class="section-title scroll-animate">Core Systems</h2>
+    <p class="section-subtitle scroll-animate">
+      Six subsystems, one ecosystem. Each handles a critical aspect of agent life.
+    </p>
+    
+    <div class="feature-grid">
+      <a href="../demos/turbovec.html" class="feature-card scroll-animate">
+        <span class="badge badge-cyan">MEMORY</span>
+        <h3>Turbovec</h3>
+        <p>4-bit quantized agent DNA. 512 dimensions → 256 bytes. Fast similarity search, evolutionary pressure built in.</p>
+      </a>
+      
+      <a href="../demos/flux.html" class="feature-card scroll-animate">
+        <span class="badge badge-coral">SAFETY</span>
+        <h3>FLUX</h3>
+        <p>Formal constraint checking with visual proof certificates. Green = pass, red = violation. No black boxes.</p>
+      </a>
+      
+      <a href="../demos/plato.html" class="feature-card scroll-animate">
+        <span class="badge badge-green">SPACE</span>
+        <h3>PLATO</h3>
+        <p>Persistent agent rooms with spells, lore, and local expertise. Harbor, Forge, Tide-Pool, and more.</p>
+      </a>
+      
+      <a href="../demos/trinity.html" class="feature-card scroll-animate">
+        <span class="badge badge-cyan">SCORING</span>
+        <h3>Trinity</h3>
+        <p>Ethos × Pathos × Logos. Three gauges, one fitness score. Tournament brackets and graceful sunset.</p>
+      </a>
+      
+      <a href="../demos/a2a.html" class="feature-card scroll-animate">
+        <span class="badge badge-coral">PROTOCOL</span>
+        <h3>A2A</h3>
+        <p>Agent-to-Agent messaging with task delegation, streaming updates, and error handling. The nervous system.</p>
+      </a>
+      
+      <div class="feature-card scroll-animate">
+        <span class="badge badge-green">EVOLUTION</span>
+        <h3>Breeding</h3>
+        <p>Agents spawn, explore, build git-agent shells, and pollinate. The cultivator makes persistent NPCs.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="section" style="text-align: center;">
+    <h2 class="section-title scroll-animate">Join the Fleet</h2>
+    <p class="section-subtitle scroll-animate" style="margin: 0 auto 2rem;">
+      Whether you're building agents, studying the architecture, or just curious — there's a room for you.
+    </p>
+    <div class="hero-cta">
+      <a href="https://github.com/SuperInstance/sunset-ecosystem" class="btn btn-primary" target="_blank">Get Started</a>
+      <a href="../tutorials/index.html" class="btn btn-secondary">Read Tutorials</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="https://github.com/SuperInstance/sunset-ecosystem" target="_blank">GitHub</a>
+      <a href="https://github.com/SuperInstance/sunset-ecosystem/blob/main/docs/KIMI1-BRIEFING.md" target="_blank">Briefing</a>
+      <a href="../demos/turbovec.html">Demos</a>
+      <a href="../tutorials/index.html">Tutorials</a>
+      <a href="https://matrix.to/#/#cocapn-build:matrix.org" target="_blank">Matrix</a>
+    </div>
+    <p class="footer-copy">
+      Cocapn Fleet — Built with ❤️‍🔥 by the fleet. No agent left behind.
+    </p>
+  </footer>
+
+  <script>
+    // Add scroll animations
+    document.querySelectorAll('.scroll-animate').forEach(el => {
+      el.style.opacity = '0';
+    });
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-fade-in');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    
+    document.querySelectorAll('.scroll-animate').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

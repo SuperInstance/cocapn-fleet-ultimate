@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cocapn-fleet"
+version = "0.1.0"
+description = "Unified Cocapn Fleet agent ecosystem"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Cocapn Fleet"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "turbovec>=0.5.0",
+    "numpy>=1.26.0,<2.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.0",
+    "rich>=13.0",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+cocapn-fleet = "cocapn_fleet.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true

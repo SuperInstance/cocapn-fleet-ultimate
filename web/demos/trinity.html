@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trinity Scorer — Cocapn Fleet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../common/styles.css">
+  <style>
+    .demo-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .gauges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin: 2rem 0; }
+    .gauge { text-align: center; }
+    .gauge-circle { width: 200px; height: 200px; margin: 0 auto; position: relative; }
+    .gauge-circle svg { transform: rotate(-90deg); }
+    .gauge-bg { fill: none; stroke: var(--surface); stroke-width: 8; }
+    .gauge-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+    .gauge-fill.ethos { stroke: var(--cyan); }
+    .gauge-fill.pathos { stroke: var(--coral); }
+    .gauge-fill.logos { stroke: var(--accent); }
+    .gauge-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; font-weight: 800; }
+    .gauge-label { margin-top: 1rem; font-size: 1.2rem; font-weight: 600; }
+    .gauge-desc { color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; }
+    .product-score { text-align: center; margin: 3rem 0; padding: 2rem; background: var(--surface); border-radius: 12px; }
+    .product-value { font-size: 4rem; font-weight: 800; background: linear-gradient(90deg, var(--cyan), var(--coral)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .product-label { font-size: 1.2rem; color: var(--muted); margin-top: 0.5rem; }
+    .status-badge { display: inline-block; padding: 0.5rem 1.5rem; border-radius: 50px; font-weight: 700; margin-top: 1rem; }
+    .status-sunrise { background: rgba(0, 240, 255, 0.2); color: var(--cyan); }
+    .status-survive { background: rgba(0, 230, 118, 0.2); color: #00e676; }
+    .status-sunset { background: rgba(255, 107, 107, 0.2); color: var(--coral); }
+    .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .agent-card { background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); }
+    .agent-card .agent-name { font-weight: 700; margin-bottom: 0.5rem; }
+    .agent-card .agent-fitness { font-size: 1.5rem; font-weight: 800; }
+    .agent-card .agent-dims { display: flex; gap: 1rem; margin-top: 1rem; font-size: 0.85rem; }
+    .agent-card .dim { display: flex; align-items: center; gap: 0.3rem; }
+    .dim-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dim-dot.ethos { background: var(--cyan); }
+    .dim-dot.pathos { background: var(--coral); }
+    .dim-dot.logos { background: var(--accent); }
+    .controls { text-align: center; margin: 2rem 0; }
+    .btn { display: inline-block; padding: 0.75rem 2rem; background: var(--cyan); color: var(--bg); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3); }
+    .tournament-bracket { margin-top: 3rem; padding: 2rem; background: var(--surface); border-radius: 12px; }
+    .bracket-round { display: flex; justify-content: space-around; margin: 1rem 0; }
+    .bracket-agent { padding: 0.5rem 1rem; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); }
+    .bracket-winner { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+  <div class="demo-container">
+    <h1>🎭 Trinity Scorer</h1>
+    <p style="color: var(--muted); margin-bottom: 2rem;">Ethos × Pathos × Logos = Fitness. Watch agents compete for survival.</p>
+
+    <div class="gauges">
+      <div class="gauge">
+        <div class="gauge-circle">
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <circle class="gauge-bg" cx="100" cy="100" r="90"></circle>
+            <circle class="gauge-fill ethos" cx="100" cy="100" r="90" 
+                    stroke-dasharray="565.48" stroke-dashoffset="565.48" id="ethos-gauge"></circle>
+          </svg>
+          <div class="gauge-value" id="ethos-value">0.00</div>
+        </div>
+        <div class="gauge-label">Ethos</div>
+        <div class="gauge-desc">Hardware fitness<br>Thermal · Memory · GPU</div>
+      </div>
+      <div class="gauge">
+        <div class="gauge-circle">
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <circle class="gauge-bg" cx="100" cy="100" r="90"></circle>
+            <circle class="gauge-fill pathos" cx="100" cy="100" r="90" 
+                    stroke-dasharray="565.48" stroke-dashoffset="565.48" id="pathos-gauge"></circle>
+          </svg>
+          <div class="gauge-value" id="pathos-value">0.00</div>
+        </div>
+        <div class="gauge-label">Pathos</div>
+        <div class="gauge-desc">Human satisfaction<br>Completion · Latency · Feedback</div>
+      </div>
+      <div class="gauge">
+        <div class="gauge-circle">
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <circle class="gauge-bg" cx="100" cy="100" r="90"></circle>
+            <circle class="gauge-fill logos" cx="100" cy="100" r="90" 
+                    stroke-dasharray="565.48" stroke-dashoffset="565.48" id="logos-gauge"></circle>
+          </svg>
+          <div class="gauge-value" id="logos-value">0.00</div>
+        </div>
+        <div class="gauge-label">Logos</div>
+        <div class="gauge-desc">Code quality<br>Tests · Proofs · Complexity</div>
+      </div>
+    </div>
+
+    <div class="product-score">
+      <div class="product-value" id="product-value">0.000</div>
+      <div class="product-label">Fitness Product = Ethos × Pathos × Logos</div>
+      <div id="status-badge" class="status-badge status-sunset">SUNSET</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="randomize()">🎲 Randomize Agent</button>
+      <button class="btn" onclick="runTournament()" style="margin-left: 1rem;">🏆 Run Tournament</button>
+    </div>
+
+    <h2>Fleet Agents</h2>
+    <div class="agents-grid" id="agents-grid"></div>
+
+    <div class="tournament-bracket" id="tournament-bracket" style="display: none;">
+      <h2>Tournament Results</h2>
+      <div id="bracket-content"></div>
+    </div>
+  </div>
+
+  <script src="../common/nav.js"></script>
+  <script>
+    const circumference = 2 * Math.PI * 90;
+    let agents = [];
+
+    function updateGauge(id, value) {
+      const offset = circumference - (value * circumference);
+      document.getElementById(id + '-gauge').style.strokeDashoffset = offset;
+      document.getElementById(id + '-value').textContent = value.toFixed(2);
+    }
+
+    function updateProduct(e, p, l) {
+      const product = e * p * l;
+      document.getElementById('product-value').textContent = product.toFixed(3);
+      
+      const badge = document.getElementById('status-badge');
+      badge.className = 'status-badge';
+      if (product >= 0.65) {
+        badge.classList.add('status-sunrise');
+        badge.textContent = 'BREED 🌅';
+      } else if (product >= 0.45) {
+        badge.classList.add('status-survive');
+        badge.textContent = 'SURVIVE ✅';
+      } else {
+        badge.classList.add('status-sunset');
+        badge.textContent = 'SUNSET 🌇';
+      }
+    }
+
+    function randomize() {
+      const e = Math.random() * 0.5 + 0.3;
+      const p = Math.random() * 0.5 + 0.3;
+      const l = Math.random() * 0.5 + 0.3;
+      
+      updateGauge('ethos', e);
+      updateGauge('pathos', p);
+      updateGauge('logos', l);
+      updateProduct(e, p, l);
+    }
+
+    function generateAgents() {
+      agents = [];
+      const names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta'];
+      
+      for (let i = 0; i < 8; i++) {
+        const e = Math.random() * 0.6 + 0.2;
+        const p = Math.random() * 0.6 + 0.2;
+        const l = Math.random() * 0.6 + 0.2;
+        agents.push({ name: names[i], ethos: e, pathos: p, logos: l, fitness: e * p * l });
+      }
+      
+      renderAgents();
+    }
+
+    function renderAgents() {
+      const grid = document.getElementById('agents-grid');
+      grid.innerHTML = agents.map(a => {
+        const status = a.fitness >= 0.65 ? 'breed' : a.fitness >= 0.45 ? 'survive' : 'sunset';
+        const statusEmoji = status === 'breed' ? '🌅' : status === 'survive' ? '✅' : '🌇';
+        return `
+          <div class="agent-card">
+            <div class="agent-name">${a.name}</div>
+            <div class="agent-fitness" style="color: ${a.fitness >= 0.65 ? 'var(--cyan)' : a.fitness >= 0.45 ? '#00e676' : 'var(--coral)'}">${a.fitness.toFixed(3)} ${statusEmoji}</div>
+            <div class="agent-dims">
+              <div class="dim"><div class="dim-dot ethos"></div> ${a.ethos.toFixed(2)}</div>
+              <div class="dim"><div class="dim-dot pathos"></div> ${a.pathos.toFixed(2)}</div>
+              <div class="dim"><div class="dim-dot logos"></div> ${a.logos.toFixed(2)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function runTournament() {
+      if (agents.length === 0) generateAgents();
+      
+      // Tournament: group of 4, winner advances
+      const shuffled = [...agents].sort(() => Math.random() - 0.5);
+      const groups = [];
+      for (let i = 0; i < shuffled.length; i += 4) {
+        groups.push(shuffled.slice(i, i + 4));
+      }
+      
+      let bracketHTML = '';
+      groups.forEach((group, idx) => {
+        const winner = group.reduce((best, a) => a.fitness > best.fitness ? a : best, group[0]);
+        bracketHTML += `
+          <div style="margin: 1.5rem 0;">
+            <div style="font-weight: 600; margin-bottom: 0.5rem;">Round ${idx + 1}</div>
+            <div class="bracket-round">
+              ${group.map(a => `
+                <div class="bracket-agent ${a.name === winner.name ? 'bracket-winner' : ''}">
+                  ${a.name}<br><small>${a.fitness.toFixed(3)}</small>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+      
+      document.getElementById('bracket-content').innerHTML = bracketHTML;
+      document.getElementById('tournament-bracket').style.display = 'block';
+    }
+
+    // Initialize
+    randomize();
+    generateAgents();
+  </script>
+</body>
+</html>

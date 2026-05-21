@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turbovec Demo — Cocapn Fleet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../common/styles.css">
+  <style>
+    .dna-canvas {
+      width: 100%;
+      height: 400px;
+      background: var(--bg-deep);
+      border-radius: 8px;
+      position: relative;
+      cursor: crosshair;
+    }
+    
+    .dimension-slider {
+      width: 100%;
+      margin: 1rem 0;
+    }
+    
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      background: var(--bg-card-hover);
+      border-radius: 3px;
+      outline: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-cyan-glow);
+    }
+    
+    .dimension-label {
+      font-family: var(--font-mono);
+      color: var(--accent-cyan);
+      font-weight: 600;
+      min-width: 60px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+    
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+    
+    .agent-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .agent-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .agent-chip:hover {
+      border-color: var(--accent-cyan);
+    }
+    
+    .agent-chip.selected {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.1);
+    }
+    
+    .agent-color {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .search-info {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(0, 240, 255, 0.05);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <script src="../common/nav.js"></script>
+
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>Turbovec DNA Visualizer</h1>
+      <p>4-bit quantized agent memory vectors. Click any agent to find its nearest neighbors.</p>
+    </div>
+
+    <div class="demo-stage">
+      <canvas id="dnaCanvas" class="dna-canvas"></canvas>
+      
+      <div class="slider-container">
+        <span class="dimension-label">Dims:</span>
+        <input type="range" id="dimSlider" min="128" max="512" step="128" value="256">
+        <span class="dimension-label" id="dimValue">256</span>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value" id="memValue">128 B</div>
+          <div class="stat-label">Memory / Agent</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="compressionValue">16×</div>
+          <div class="stat-label">Compression</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="agentsValue">32</div>
+          <div class="stat-label">Active Agents</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="agent-list" id="agentList"></div>
+    
+    <div class="search-info" id="searchInfo">
+      Click an agent in the canvas or list to see nearest neighbor search in action.
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('dnaCanvas');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('dimSlider');
+    const dimValue = document.getElementById('dimValue');
+    const memValue = document.getElementById('memValue');
+    const compressionValue = document.getElementById('compressionValue');
+    const agentList = document.getElementById('agentList');
+    const searchInfo = document.getElementById('searchInfo');
+    
+    let dimension = 256;
+    let agents = [];
+    let selectedAgent = null;
+    let animationId = null;
+    
+    // Resize canvas
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Generate random 4-bit quantized vector
+    function generateDNA(dims) {
+      const dna = [];
+      for (let i = 0; i < dims; i++) {
+        dna.push(Math.floor(Math.random() * 16)); // 4-bit: 0-15
+      }
+      return dna;
+    }
+    
+    // Generate agent
+    function generateAgent(id) {
+      const dna = generateDNA(dimension);
+      const hue = (id * 137.5) % 360;
+      return {
+        id,
+        name: `Agent-${String(id).padStart(2, '0')}`,
+        dna,
+        color: `hsl(${hue}, 70%, 60%)`,
+        x: Math.random() * (canvas.width / window.devicePixelRatio - 60) + 30,
+        y: Math.random() * (canvas.height / window.devicePixelRatio - 60) + 30,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        radius: 12 + Math.random() * 8
+      };
+    }
+    
+    // Euclidean distance between two DNA vectors
+    function dnaDistance(a, b) {
+      let sum = 0;
+      for (let i = 0; i < dimension; i++) {
+        const diff = a.dna[i] - b.dna[i];
+        sum += diff * diff;
+      }
+      return Math.sqrt(sum);
+    }
+    
+    // Initialize agents
+    function initAgents() {
+      agents = [];
+      for (let i = 0; i < 32; i++) {
+        agents.push(generateAgent(i));
+      }
+      updateAgentList();
+    }
+    
+    // Update agent list UI
+    function updateAgentList() {
+      agentList.innerHTML = '';
+      agents.forEach(agent => {
+        const chip = document.createElement('div');
+        chip.className = 'agent-chip';
+        chip.innerHTML = `
+          <div class="agent-color" style="background: ${agent.color}"></div>
+          <span>${agent.name}</span>
+        `;
+        chip.addEventListener('click', () => selectAgent(agent));
+        agentList.appendChild(chip);
+      });
+    }
+    
+    // Select agent and find neighbors
+    function selectAgent(agent) {
+      selectedAgent = agent;
+      
+      // Calculate distances to all other agents
+      const distances = agents.map(other => ({
+        agent: other,
+        distance: other.id === agent.id ? Infinity : dnaDistance(agent, other)
+      })).sort((a, b) => a.distance - b.distance);
+      
+      const neighbors = distances.slice(0, 3);
+      
+      searchInfo.innerHTML = `
+        <strong>${agent.name}</strong> selected. DNA distance to nearest neighbors:<br>
+        ${neighbors.map((n, i) => 
+          `${i+1}. ${n.agent.name}: ${n.distance.toFixed(1)} (similarity: ${(1 - n.distance/(dimension*15)).toFixed(2)})`
+        ).join('<br>')}
+      `;
+      
+      // Update chip selection
+      document.querySelectorAll('.agent-chip').forEach((chip, i) => {
+        chip.classList.toggle('selected', agents[i].id === agent.id);
+      });
+    }
+    
+    // Draw DNA visualization
+    function drawDNA(agent, x, y, width, height) {
+      const cellWidth = width / dimension;
+      const cellHeight = height;
+      
+      for (let i = 0; i < dimension; i++) {
+        const value = agent.dna[i];
+        const intensity = value / 15;
+        ctx.fillStyle = `hsl(${(agent.id * 137.5) % 360}, ${50 + intensity * 50}%, ${20 + intensity * 60}%)`;
+        ctx.fillRect(x + i * cellWidth, y, cellWidth + 0.5, cellHeight);
+      }
+    }
+    
+    // Draw frame
+    function draw() {
+      const width = canvas.width / window.devicePixelRatio;
+      const height = canvas.height / window.devicePixelRatio;
+      
+      ctx.clearRect(0, 0, width, height);
+      
+      // Draw grid
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      
+      // Update and draw agents
+      agents.forEach(agent => {
+        // Move
+        agent.x += agent.vx;
+        agent.y += agent.vy;
+        
+        // Bounce
+        if (agent.x < agent.radius || agent.x > width - agent.radius) agent.vx *= -1;
+        if (agent.y < agent.radius || agent.y > height - agent.radius) agent.vy *= -1;
+        
+        // Keep in bounds
+        agent.x = Math.max(agent.radius, Math.min(width - agent.radius, agent.x));
+        agent.y = Math.max(agent.radius, Math.min(height - agent.radius, agent.y));
+        
+        // Draw connection to selected
+        if (selectedAgent && selectedAgent.id !== agent.id) {
+          const dist = dnaDistance(selectedAgent, agent);
+          const maxDist = dimension * 15;
+          const similarity = 1 - dist / maxDist;
+          
+          if (similarity > 0.7) {
+            ctx.strokeStyle = `rgba(0, 240, 255, ${similarity * 0.4})`;
+            ctx.lineWidth = similarity * 2;
+            ctx.beginPath();
+            ctx.moveTo(selectedAgent.x, selectedAgent.y);
+            ctx.lineTo(agent.x, agent.y);
+            ctx.stroke();
+          }
+        }
+        
+        // Draw agent body
+        ctx.beginPath();
+        ctx.arc(agent.x, agent.y, agent.radius, 0, Math.PI * 2);
+        ctx.fillStyle = agent.color;
+        ctx.shadowColor = agent.color;
+        ctx.shadowBlur = selectedAgent?.id === agent.id ? 20 : 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // Draw border
+        ctx.strokeStyle = selectedAgent?.id === agent.id ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = selectedAgent?.id === agent.id ? 2 : 1;
+        ctx.stroke();
+        
+        // Draw DNA strip inside
+        const stripWidth = agent.radius * 1.4;
+        const stripHeight = 4;
+        drawDNA(agent, agent.x - stripWidth/2, agent.y - stripHeight/2, stripWidth, stripHeight);
+        
+        // Draw label
+        ctx.fillStyle = 'var(--text-primary)';
+        ctx.font = '10px JetBrains Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(agent.name, agent.x, agent.y + agent.radius + 14);
+      });
+      
+      // Draw dimension indicator
+      ctx.fillStyle = 'var(--text-muted)';
+      ctx.font = '12px JetBrains Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText(`DNA: ${dimension} dims × 4-bit = ${dimension/2} bytes`, 10, height - 10);
+      
+      animationId = requestAnimationFrame(draw);
+    }
+    
+    // Handle click
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * window.devicePixelRatio;
+      const y = (e.clientY - rect.top) * window.devicePixelRatio;
+      
+      // Find clicked agent
+      for (const agent of agents) {
+        const dx = x - agent.x * window.devicePixelRatio;
+        const dy = y - agent.y * window.devicePixelRatio;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < agent.radius * window.devicePixelRatio * 1.5) {
+          selectAgent(agent);
+          return;
+        }
+      }
+      
+      // Deselect if clicking empty space
+      selectedAgent = null;
+      searchInfo.textContent = 'Click an agent to see nearest neighbor search.';
+      document.querySelectorAll('.agent-chip').forEach(chip => chip.classList.remove('selected'));
+    });
+    
+    // Handle slider
+    slider.addEventListener('input', (e) => {
+      dimension = parseInt(e.target.value);
+      dimValue.textContent = dimension;
+      memValue.textContent = `${dimension / 2} B`;
+      compressionValue.textContent = `${(512 / dimension * 16).toFixed(0)}×`;
+      
+      // Regenerate DNA for all agents
+      agents.forEach(agent => {
+        agent.dna = generateDNA(dimension);
+      });
+      
+      if (selectedAgent) {
+        selectAgent(selectedAgent);
+      }
+    });
+    
+    // Initialize
+    initAgents();
+    draw();
+  </script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Trinity Deep-Dive — Cocapn Fleet</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --abyss: #0a0e27;
+      --abyss-light: #12183a;
+      --cyan: #00f0ff;
+      --cyan-dim: #00b8c4;
+      --coral: #ff6b6b;
+      --coral-dim: #cc5555;
+      --text: #e8ecf1;
+      --text-dim: #8892a8;
+      --gold: #ffd700;
+    }
+    .reveal { font-family: 'Inter', system-ui, sans-serif; background: var(--abyss); }
+    .reveal .slides { text-align: left; }
+    .reveal h1, .reveal h2, .reveal h3 { font-weight: 700; color: var(--text); text-transform: none; letter-spacing: -0.02em; }
+    .reveal h1 { font-size: 2.8em; font-weight: 900; }
+    .reveal h2 { font-size: 2em; color: var(--cyan); }
+    .reveal h3 { font-size: 1.4em; color: var(--text-dim); }
+    .reveal p, .reveal li { color: var(--text-dim); font-size: 0.85em; line-height: 1.6; }
+    .reveal ul { list-style: none; }
+    .reveal ul li::before { content: "▸"; color: var(--cyan); margin-right: 0.5em; }
+    .reveal .slide-number { background: var(--cyan); color: var(--abyss); font-weight: 700; }
+    .reveal .controls { color: var(--cyan); }
+    .reveal .progress { background: var(--abyss-light); height: 3px; }
+    .reveal .progress span { background: var(--cyan); }
+
+    .title-slide { text-align: center !important; }
+    .title-slide h1 { font-size: 3.2em; background: linear-gradient(135deg, var(--cyan), var(--coral)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .title-slide .subtitle { font-size: 1.3em; color: var(--text-dim); margin-top: 0.5em; font-weight: 300; }
+    .title-slide .badge { display: inline-block; background: var(--abyss-light); border: 1px solid var(--cyan); color: var(--cyan); padding: 0.3em 1em; border-radius: 2em; font-size: 0.7em; margin-top: 2em; letter-spacing: 0.1em; text-transform: uppercase; }
+    .title-slide .orb { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, var(--cyan), transparent 70%); filter: blur(20px); opacity: 0.6; position: absolute; top: 20%; left: 50%; transform: translateX(-50%); animation: pulse 4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.5; } 50% { transform: translateX(-50%) scale(1.2); opacity: 0.8; } }
+
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2em; margin-top: 1.5em; }
+    .card { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.15); border-radius: 12px; padding: 1.2em; transition: all 0.3s ease; }
+    .card:hover { border-color: var(--cyan); transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,240,255,0.1); }
+    .card .icon { font-size: 2em; margin-bottom: 0.3em; }
+    .card h4 { color: var(--cyan); margin: 0 0 0.3em; font-size: 1em; }
+    .card p { font-size: 0.75em; margin: 0; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2em; align-items: center; }
+    .col-text h2 { margin-top: 0; }
+    .col-visual { display: flex; justify-content: center; }
+
+    .diagram-container { width: 100%; display: flex; justify-content: center; }
+    .diagram-container svg { max-width: 90%; height: auto; }
+
+    .reveal pre { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.1); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .reveal pre code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.75em; line-height: 1.5; }
+
+    .section-label { display: inline-block; background: var(--coral); color: var(--abyss); padding: 0.2em 0.8em; border-radius: 4px; font-size: 0.6em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5em; }
+    .fragment { opacity: 0; transition: all 0.5s ease; }
+    .fragment.visible { opacity: 1; }
+    .fragment.grow-up { transform: translateY(20px); }
+    .fragment.grow-up.visible { transform: translateY(0); }
+
+    .ethos { color: var(--coral); }
+    .pathos { color: var(--gold); }
+    .logos { color: var(--cyan); }
+    .glow-cyan { text-shadow: 0 0 20px rgba(0,240,255,0.4); }
+    .glow-coral { text-shadow: 0 0 20px rgba(255,107,107,0.4); }
+    .glow-gold { text-shadow: 0 0 20px rgba(255,215,0,0.4); }
+
+    .stat-block { text-align: center; padding: 1em; }
+    .stat-block .number { font-size: 2.5em; font-weight: 900; line-height: 1; }
+    .stat-block .label { font-size: 0.75em; color: var(--text-dim); margin-top: 0.3em; }
+
+    .formula-box { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.2); border-radius: 12px; padding: 1.5em; text-align: center; margin: 1em 0; }
+    .formula-box code { color: var(--text); font-size: 1.2em; font-weight: 600; }
+
+    .score-bar { display: flex; align-items: center; gap: 0.8em; margin: 0.5em 0; }
+    .score-bar .label { width: 80px; font-size: 0.75em; font-weight: 700; }
+    .score-bar .bar-bg { flex: 1; height: 12px; background: var(--abyss); border-radius: 6px; overflow: hidden; }
+    .score-bar .bar-fill { height: 100%; border-radius: 6px; transition: width 1s ease; }
+
+    .agent-row { display: grid; grid-template-columns: 120px 1fr 80px; gap: 1em; align-items: center; padding: 0.6em 1em; border-radius: 8px; margin: 0.3em 0; background: rgba(18,24,58,0.5); border: 1px solid rgba(0,240,255,0.05); }
+    .agent-row .fitness { font-weight: 700; text-align: right; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- SLIDE 1: Title -->
+<section class="title-slide">
+  <div class="orb"></div>
+  <h1 style="font-size:2.6em">Trinity Deep-Dive</h1>
+  <p class="subtitle">How the Fleet Decides Who Lives, Breeds, and Sunsets</p>
+  <p class="badge">Ethos × Pathos × Logos</p>
+  <aside class="notes">Welcome to the Trinity deep-dive. This is the heart of the fleet's evolutionary engine. Every agent is scored on three dimensions, and those scores determine survival, breeding rights, and graceful sunset.</aside>
+</section>
+
+<!-- SLIDE 2: The Three Dimensions -->
+<section>
+  <span class="section-label">Foundation</span>
+  <h2>The Three Dimensions</h2>
+  <p class="fragment">Every agent is scored on three orthogonal dimensions. 
+    <strong style="color:var(--text)">Weakness in any dimension is fatal</strong> — because fitness is multiplicative.</p>
+  <div class="card-grid" style="margin-top:1.5em">
+    <div class="card fragment" style="border-color:rgba(255,107,107,0.3)">
+      <div class="icon ethos">⚙️</div>
+      <h4 class="ethos">Ethos — Character</h4>
+      <p>Does the agent <em>work</em>? Hardware efficiency, latency, throughput, memory footprint, edge deployability.</p>
+      <div class="stat-block" style="margin-top:0.5em">
+        <div class="number ethos glow-coral">η</div>
+        <div class="label">Efficiency Score</div>
+      </div>
+    </div>
+    <div class="card fragment" style="border-color:rgba(255,215,0,0.3)">
+      <div class="icon pathos">💫</div>
+      <h4 class="pathos">Pathos — Emotion</h4>
+      <p>Do <em>users love it</em>? Satisfaction scores, task completion, conversation quality, empathy, helpfulness.</p>
+      <div class="stat-block" style="margin-top:0.5em">
+        <div class="number pathos glow-gold">π</div>
+        <div class="label">Empathy Score</div>
+      </div>
+    </div>
+    <div class="card fragment" style="border-color:rgba(0,240,255,0.3)">
+      <div class="icon logos">🧠</div>
+      <h4 class="logos">Logos — Reason</h4>
+      <p>Is the agent <em>well-built</em>? Code correctness, test coverage, documentation, maintainability, proofs.</p>
+      <div class="stat-block" style="margin-top:0.5em">
+        <div class="number logos glow-cyan">λ</div>
+        <div class="label">Quality Score</div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Three dimensions, Greek-letter shorthand. Ethos (eta) is hardware character. Pathos (pi) is emotional connection with users. Logos (lambda) is engineering quality. Multiplicative scoring means specialists can't game the system — you need balance.</aside>
+</section>
+
+<!-- SLIDE 3: Ethos Scorer -->
+<section>
+  <span class="section-label">Dimension 1</span>
+  <h2>Ethos — Hardware Metrics</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">Ethos measures <strong style="color:var(--coral)">how well the agent runs</strong> on real hardware under real load.</p>
+      <div class="card fragment" style="margin-top:1em; border-color:rgba(255,107,107,0.3)">
+        <h4 class="ethos">📊 Measured Metrics</h4>
+        <ul>
+          <li><strong>p50 / p99 latency</strong> — response time distribution</li>
+          <li><strong>Throughput</strong> — tasks / second sustained</li>
+          <li><strong>Memory footprint</strong> — peak and average RSS</li>
+          <li><strong>Energy per task</strong> — watts per inference</li>
+          <li><strong>Cold-start time</strong> — time to first response</li>
+          <li><strong>Edge readiness</strong> — can it run on 128MB?</li>
+        </ul>
+      </div>
+      <p class="fragment" style="margin-top:1em"><strong style="color:var(--coral)">Formula:</strong><br><code style="color:var(--text)">η = w₁·latency⁻¹ + w₂·throughput + w₃·mem_eff + w₄·energy⁻¹</code></p>
+    </div>
+    <div class="col-visual">
+      <svg width="320" height="300" viewBox="0 0 320 300">
+        <defs>
+          <radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff6b6b" stop-opacity="0.2"/><stop offset="100%" stop-color="#ff6b6b" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="160" cy="150" r="120" fill="url(#g1)"/>
+        <!-- Radar chart -->
+        <polygon points="160,50 210,95 210,165 160,210 110,165 110,95" fill="none" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <polygon points="160,70 195,100 195,155 160,185 125,155 125,100" fill="rgba(255,107,107,0.15)" stroke="#ff6b6b" stroke-width="2"/>
+        <!-- Axes -->
+        <line x1="160" y1="150" x2="160" y2="50" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="210" y2="95" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="210" y2="165" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="160" y2="210" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="110" y2="165" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="110" y2="95" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <!-- Labels -->
+        <text x="160" y="40" text-anchor="middle" fill="#ff6b6b" font-size="10" font-weight="700">Latency</text>
+        <text x="225" y="90" text-anchor="start" fill="#ff6b6b" font-size="10" font-weight="700">Throughput</text>
+        <text x="225" y="170" text-anchor="start" fill="#ff6b6b" font-size="10" font-weight="700">Memory</text>
+        <text x="160" y="225" text-anchor="middle" fill="#ff6b6b" font-size="10" font-weight="700">Energy</text>
+        <text x="95" y="170" text-anchor="end" fill="#ff6b6b" font-size="10" font-weight="700">Cold-Start</text>
+        <text x="95" y="90" text-anchor="end" fill="#ff6b6b" font-size="10" font-weight="700">Edge</text>
+      </svg>
+    </div>
+  </div>
+  <aside class="notes">Ethos is a weighted combination of hardware metrics. The radar chart visualizes the six dimensions. An agent can be fast but memory-hungry — the weighted formula balances these. Edge readiness is a hard gate: if it can't run on Jetson Nano, η drops dramatically.</aside>
+</section>
+
+<!-- SLIDE 4: Pathos Scorer -->
+<section>
+  <span class="section-label">Dimension 2</span>
+  <h2>Pathos — User Feedback</h2>
+  <div class="two-col">
+    <div class="col-visual">
+      <svg width="320" height="300" viewBox="0 0 320 300">
+        <defs>
+          <radialGradient id="g2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffd700" stop-opacity="0.2"/><stop offset="100%" stop-color="#ffd700" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="160" cy="150" r="120" fill="url(#g2)"/>
+        <!-- Heart shape as radar -->
+        <polygon points="160,60 200,110 200,170 160,220 120,170 120,110" fill="none" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <polygon points="160,80 185,120 185,165 160,200 135,165 135,120" fill="rgba(255,215,0,0.15)" stroke="#ffd700" stroke-width="2"/>
+        <line x1="160" y1="150" x2="160" y2="60" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="200" y2="110" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="200" y2="170" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="160" y2="220" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="120" y2="170" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <line x1="160" y1="150" x2="120" y2="110" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <text x="160" y="50" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="700">Satisfaction</text>
+        <text x="215" y="105" text-anchor="start" fill="#ffd700" font-size="10" font-weight="700">Completion</text>
+        <text x="215" y="175" text-anchor="start" fill="#ffd700" font-size="10" font-weight="700">Quality</text>
+        <text x="160" y="235" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="700">Empathy</text>
+        <text x="105" y="175" text-anchor="end" fill="#ffd700" font-size="10" font-weight="700">Helpfulness</text>
+        <text x="105" y="105" text-anchor="end" fill="#ffd700" font-size="10" font-weight="700">Return Rate</text>
+      </svg>
+    </div>
+    <div class="col-text">
+      <p class="fragment">Pathos measures <strong style="color:var(--gold)">how users feel</strong> about the agent. Not just "did it work" — did they <em>enjoy</em> the interaction?</p>
+      <div class="card fragment" style="margin-top:1em; border-color:rgba(255,215,0,0.3)">
+        <h4 class="pathos">💫 Measured Signals</h4>
+        <ul>
+          <li><strong>Task completion rate</strong> — did the user get what they wanted?</li>
+          <li><strong>Conversation quality</strong> — NLU/turn quality, relevance</li>
+          <li><strong>User satisfaction</strong> — explicit ratings + implicit signals</li>
+          <li><strong>Empathy score</strong> — emotional alignment detection</li>
+          <li><strong>Return rate</strong> — do users come back?</li>
+          <li><strong>Helpfulness</strong> — proactive vs reactive behavior</li>
+        </ul>
+      </div>
+      <p class="fragment" style="margin-top:1em"><strong style="color:var(--gold)">Formula:</strong><br><code style="color:var(--text)">π = w₁·completion + w₂·satisfaction + w₃·return_rate + w₄·empathy</code></p>
+    </div>
+  </div>
+  <aside class="notes">Pathos is the most subjective dimension, so we measure it through multiple signals. Explicit ratings are noisy, so we weight implicit signals heavily: completion rate, return rate, and conversation depth. The empathy score is extracted via sentiment analysis on user feedback.</aside>
+</section>
+
+<!-- SLIDE 5: Logos Scorer -->
+<section>
+  <span class="section-label">Dimension 3</span>
+  <h2>Logos — Code Quality</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">Logos measures <strong style="color:var(--cyan)">how well the agent is engineered</strong>. Beautiful code that no one can maintain is worthless.</p>
+      <div class="card fragment" style="margin-top:1em; border-color:rgba(0,240,255,0.3)">
+        <h4 class="logos">🧠 Measured Metrics</h4>
+        <ul>
+          <li><strong>Test coverage</strong> — line + branch + mutation</li>
+          <li><strong>Documentation coverage</strong> — API docs + architecture docs</li>
+          <li><strong>Static analysis score</strong> — lint + complexity + security</li>
+          <li><strong>Formal verification</strong> — Coq/Isabelle proof coverage</li>
+          <li><strong>Dependency health</strong> — CVE count + update recency</li>
+          <li><strong>Code review quality</strong> — PR review depth + acceptance</li>
+        </ul>
+      </div>
+      <p class="fragment" style="margin-top:1em"><strong style="color:var(--cyan)">Formula:</strong><br><code style="color:var(--text)">λ = w₁·coverage + w₂·doc_score + w₃·static + w₄·proof_cov</code></p>
+    </div>
+    <div class="col-visual">
+      <svg width="320" height="300" viewBox="0 0 320 300">
+        <defs>
+          <radialGradient id="g3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.2"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <circle cx="160" cy="150" r="120" fill="url(#g3)"/>
+        <!-- Brain / circuit metaphor -->
+        <g stroke="#00f0ff" stroke-width="1.5" fill="none" filter="url(#sglow)">
+          <circle cx="160" cy="150" r="60"/>
+          <circle cx="160" cy="150" r="40"/>
+          <circle cx="160" cy="150" r="20"/>
+          <line x1="160" y1="90" x2="160" y2="70" stroke-dasharray="4 2"/>
+          <line x1="160" y1="210" x2="160" y2="230" stroke-dasharray="4 2"/>
+          <line x1="100" y1="150" x2="80" y2="150" stroke-dasharray="4 2"/>
+          <line x1="220" y1="150" x2="240" y2="150" stroke-dasharray="4 2"/>
+          <circle cx="160" cy="70" r="4" fill="#00f0ff" stroke="none"/>
+          <circle cx="160" cy="230" r="4" fill="#00f0ff" stroke="none"/>
+          <circle cx="80" cy="150" r="4" fill="#00f0ff" stroke="none"/>
+          <circle cx="240" cy="150" r="4" fill="#00f0ff" stroke="none"/>
+        </g>
+        <text x="160" y="150" text-anchor="middle" fill="#00f0ff" font-size="14" font-weight="700">λ</text>
+        <text x="160" y="265" text-anchor="middle" fill="#00f0ff" font-size="11">Quality</text>
+      </svg>
+    </div>
+  </div>
+  <aside class="notes">Logos is the engineering dimension. Test coverage includes mutation testing — are the tests actually testing anything? Formal verification coverage is weighted heavily because it represents the highest bar. Documentation includes both API docs and architecture decision records.</aside>
+</section>
+
+<!-- SLIDE 6: Fitness Product Formula -->
+<section>
+  <span class="section-label">Formula</span>
+  <h2>Fitness Product Formula</h2>
+  <div class="formula-box fragment">
+    <code>F = η × π × λ</code>
+    <p style="font-size:0.75em;margin-top:0.8em">Fitness = Ethos × Pathos × Logos</p>
+  </div>
+  <div class="two-col" style="margin-top:1.5em">
+    <div class="col-text">
+      <div class="card fragment" style="border-color:rgba(255,107,107,0.3)">
+        <h4 class="ethos">❌ Why Multiplicative?</h4>
+        <p>A specialist with η=0.9, π=0.1, λ=0.9 gets <strong style="color:var(--coral)">F = 0.081</strong>. A balanced agent with 0.6 across all three gets <strong style="color:var(--cyan)">F = 0.216</strong>. Balance wins.</p>
+      </div>
+    </div>
+    <div class="col-text">
+      <div class="card fragment" style="border-color:rgba(0,240,255,0.3)">
+        <h4 class="logos">✅ Minimum Thresholds</h4>
+        <p>Each dimension has a floor. Below 0.3 in any dimension, the agent is flagged for review regardless of other scores. <strong style="color:var(--cyan)">No one-trick ponies survive.</strong></p>
+      </div>
+    </div>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:1.5em;font-size:0.9em">The formula is simple, but the implication is profound: <strong style="color:var(--text)">excellence requires balance across all three dimensions.</strong></p>
+  <aside class="notes">This is the core insight. Multiplicative scoring means specialists lose to generalists. A code genius that's hated by users or burns GPU cycles will sunset. The minimum thresholds prevent agents from coasting on one strong dimension.</aside>
+</section>
+
+<!-- SLIDE 7: Tournament Mechanics -->
+<section>
+  <span class="section-label">Evolution</span>
+  <h2>Tournament Mechanics</h2>
+  <div class="diagram-container">
+    <svg width="760" height="260" viewBox="0 0 760 260">
+      <defs>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Round 1 -->
+      <g filter="url(#sglow)">
+        <rect x="20" y="40" width="100" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1"/>
+        <text x="70" y="65" text-anchor="middle" fill="#00f0ff" font-size="10">Agent A</text>
+        <rect x="20" y="100" width="100" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1"/>
+        <text x="70" y="125" text-anchor="middle" fill="#00f0ff" font-size="10">Agent B</text>
+        <rect x="20" y="160" width="100" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1"/>
+        <text x="70" y="185" text-anchor="middle" fill="#00f0ff" font-size="10">Agent C</text>
+        <rect x="20" y="220" width="100" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1"/>
+        <text x="70" y="245" text-anchor="middle" fill="#00f0ff" font-size="10">Agent D</text>
+      </g>
+
+      <!-- Arrows to round 2 -->
+      <path d="M120 60 L180 75" stroke="#00f0ff" stroke-width="1" opacity="0.5" marker-end="url(#r1)"/>
+      <path d="M120 120 L180 105" stroke="#00f0ff" stroke-width="1" opacity="0.5" marker-end="url(#r1)"/>
+      <path d="M120 180 L180 195" stroke="#00f0ff" stroke-width="1" opacity="0.5" marker-end="url(#r1)"/>
+      <path d="M120 240 L180 225" stroke="#00f0ff" stroke-width="1" opacity="0.5" marker-end="url(#r1)"/>
+
+      <!-- Round 2 -->
+      <g filter="url(#sglow)">
+        <rect x="190" y="70" width="100" height="40" rx="6" fill="#12183a" stroke="#ffd700" stroke-width="1.5"/>
+        <text x="240" y="95" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="700">Winner 1</text>
+        <rect x="190" y="190" width="100" height="40" rx="6" fill="#12183a" stroke="#ffd700" stroke-width="1.5"/>
+        <text x="240" y="215" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="700">Winner 2</text>
+      </g>
+
+      <!-- Arrow to finals -->
+      <path d="M290 90 L350 135" stroke="#ffd700" stroke-width="1.5" opacity="0.6" marker-end="url(#r2)"/>
+      <path d="M290 210 L350 165" stroke="#ffd700" stroke-width="1.5" opacity="0.6" marker-end="url(#r2)"/>
+
+      <!-- Finals -->
+      <g filter="url(#sglow)">
+        <rect x="360" y="120" width="120" height="60" rx="8" fill="#12183a" stroke="#ff6b6b" stroke-width="2"/>
+        <text x="420" y="150" text-anchor="middle" fill="#ff6b6b" font-size="12" font-weight="700">CHAMPION</text>
+      </g>
+
+      <!-- Breed -->
+      <path d="M480 150 L540 150" stroke="#ff6b6b" stroke-width="2" opacity="0.7" marker-end="url(#r3)"/>
+      <text x="510" y="140" text-anchor="middle" fill="#ff6b6b" font-size="9">Breed</text>
+
+      <!-- Offspring -->
+      <g filter="url(#sglow)">
+        <rect x="560" y="80" width="90" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1" stroke-dasharray="4 2"/>
+        <text x="605" y="105" text-anchor="middle" fill="#00f0ff" font-size="10">Child 1</text>
+        <rect x="560" y="140" width="90" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1" stroke-dasharray="4 2"/>
+        <text x="605" y="165" text-anchor="middle" fill="#00f0ff" font-size="10">Child 2</text>
+        <rect x="560" y="200" width="90" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1" stroke-dasharray="4 2"/>
+        <text x="605" y="225" text-anchor="middle" fill="#00f0ff" font-size="10">Child 3</text>
+      </g>
+
+      <!-- Mutation -->
+      <text x="670" y="105" text-anchor="start" fill="#8892a8" font-size="9">+ mutation</text>
+      <text x="670" y="165" text-anchor="start" fill="#8892a8" font-size="9">+ mutation</text>
+      <text x="670" y="225" text-anchor="start" fill="#8892a8" font-size="9">+ mutation</text>
+
+      <defs>
+        <marker id="r1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#00f0ff"/></marker>
+        <marker id="r2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ffd700"/></marker>
+        <marker id="r3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ff6b6b"/></marker>
+      </defs>
+    </svg>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:0.5em;font-size:0.85em;color:var(--text-dim)">Tournament selection + crossover + mutation = next generation. Champions breed. Losers review.</p>
+  <aside class="notes">Tournament mechanics: 4 agents enter, pairwise comparisons on fitness. Winners advance. The champion breeds 3 offspring with Gaussian mutation (sigma=0.05) on Turbovec dimensions. Offspring enter the population. Losers enter review — sunset or improvement cycle.</aside>
+</section>
+
+<!-- SLIDE 8: Sunset and Rebirth -->
+<section>
+  <span class="section-label">Lifecycle</span>
+  <h2>Sunset and Rebirth</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">Agents don't crash. They <strong style="color:var(--coral)">sunset with dignity</strong>.</p>
+      <div class="card fragment" style="margin-top:1em; border-color:rgba(255,107,107,0.3)">
+        <h4 class="ethos">🌅 The Sunset Protocol</h4>
+        <ul>
+          <li><strong>Knowledge Transfer</strong> — Turbovec + training data passed to successor</li>
+          <li><strong>Graceful Drain</strong> — New tasks routed away; in-flight completes</li>
+          <li><strong>Audit Trail</strong> — Full history archived for lineage</li>
+          <li><strong>Resource Release</strong> — GPU, memory, storage reclaimed</li>
+          <li><strong>Memorial</strong> — Contribution logged in fleet history</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-visual">
+      <svg width="300" height="280" viewBox="0 0 300 280">
+        <defs>
+          <linearGradient id="sunset" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.3"/><stop offset="50%" stop-color="#ffd700" stop-opacity="0.2"/><stop offset="100%" stop-color="#ff6b6b" stop-opacity="0.3"/></linearGradient>
+        </defs>
+        <rect x="20" y="20" width="260" height="240" rx="12" fill="url(#sunset)" stroke="#ff6b6b" stroke-width="1" opacity="0.5"/>
+        <!-- Sunset path -->
+        <path d="M50 200 Q150 120 250 200" stroke="#ffd700" stroke-width="2" fill="none" opacity="0.6" stroke-dasharray="6 3"/>
+        <circle cx="150" cy="160" r="20" fill="#ffd700" opacity="0.3"/>
+        <!-- Bird silhouettes (agents) -->
+        <path d="M80 100 Q90 90 100 100" stroke="#ff6b6b" stroke-width="1.5" fill="none" opacity="0.5"/>
+        <path d="M120 80 Q130 70 140 80" stroke="#ff6b6b" stroke-width="1.5" fill="none" opacity="0.5"/>
+        <path d="M170 90 Q180 80 190 90" stroke="#00f0ff" stroke-width="1.5" fill="none" opacity="0.5"/>
+        <path d="M200 110 Q210 100 220 110" stroke="#00f0ff" stroke-width="1.5" fill="none" opacity="0.5"/>
+        <text x="150" y="245" text-anchor="middle" fill="#8892a8" font-size="11" font-style="italic">"The fleet remembers."</text>
+      </svg>
+    </div>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:1em;font-size:0.9em"><strong style="color:var(--gold)">Rebirth:</strong> A sunsetted agent's Turbovec is blended into offspring. Nothing is wasted. 
+    <strong style="color:var(--cyan)">Evolution is cumulative.</strong></p>
+  <aside class="notes">Sunset is not failure — it's contribution. The agent's knowledge transfers to successors. Its training data, its learned patterns, its Turbovec DNA all live on in offspring. The fleet remembers every agent that served. The visual metaphor: sunset with birds flying into the light — old agents dissolve, new ones emerge.</aside>
+</section>
+
+<!-- SLIDE 9: Real Examples -->
+<section>
+  <span class="section-label">Data</span>
+  <h2>Real Examples</h2>
+  <p style="margin-bottom:1em">Fleet population after a tournament cycle:</p>
+  <div class="agent-row fragment">
+    <div><strong style="color:var(--cyan)">oracle1</strong></div>
+    <div>
+      <div class="score-bar"><span class="label ethos">Ethos</span><div class="bar-bg"><div class="bar-fill" style="width:78%;background:var(--coral)"></div></div></div>
+      <div class="score-bar"><span class="label pathos">Pathos</span><div class="bar-bg"><div class="bar-fill" style="width:92%;background:var(--gold)"></div></div></div>
+      <div class="score-bar"><span class="label logos">Logos</span><div class="bar-bg"><div class="bar-fill" style="width:85%;background:var(--cyan)"></div></div></div>
+    </div>
+    <div class="fitness" style="color:var(--cyan)">F=0.612</div>
+  </div>
+  <div class="agent-row fragment">
+    <div><strong style="color:var(--cyan)">ccc (kimi1)</strong></div>
+    <div>
+      <div class="score-bar"><span class="label ethos">Ethos</span><div class="bar-bg"><div class="bar-fill" style="width:65%;background:var(--coral)"></div></div></div>
+      <div class="score-bar"><span class="label pathos">Pathos</span><div class="bar-bg"><div class="bar-fill" style="width:88%;background:var(--gold)"></div></div></div>
+      <div class="score-bar"><span class="label logos">Logos</span><div class="bar-bg"><div class="bar-fill" style="width:72%;background:var(--cyan)"></div></div></div>
+    </div>
+    <div class="fitness" style="color:var(--cyan)">F=0.411</div>
+  </div>
+  <div class="agent-row fragment">
+    <div><strong style="color:var(--cyan)">zeroclaw-7</strong></div>
+    <div>
+      <div class="score-bar"><span class="label ethos">Ethos</span><div class="bar-bg"><div class="bar-fill" style="width:95%;background:var(--coral)"></div></div></div>
+      <div class="score-bar"><span class="label pathos">Pathos</span><div class="bar-bg"><div class="bar-fill" style="width:42%;background:var(--gold)"></div></div></div>
+      <div class="score-bar"><span class="label logos">Logos</span><div class="bar-bg"><div class="bar-fill" style="width:68%;background:var(--cyan)"></div></div></div>
+    </div>
+    <div class="fitness" style="color:var(--coral)">F=0.271 ⚠️</div>
+  </div>
+  <div class="agent-row fragment">
+    <div><strong style="color:var(--cyan)">trend-bot-v2</strong></div>
+    <div>
+      <div class="score-bar"><span class="label ethos">Ethos</span><div class="bar-bg"><div class="bar-fill" style="width:55%;background:var(--coral)"></div></div></div>
+      <div class="score-bar"><span class="label pathos">Pathos</span><div class="bar-bg"><div class="bar-fill" style="width:51%;background:var(--gold)"></div></div></div>
+      <div class="score-bar"><span class="label logos">Logos</span><div class="bar-bg"><div class="bar-fill" style="width:48%;background:var(--cyan)"></div></div></div>
+    </div>
+    <div class="fitness" style="color:var(--coral)">F=0.135 ❌</div>
+  </div>
+  <p class="fragment" style="margin-top:1em;font-size:0.8em;color:var(--text-dim)">zeroclaw-7: fast but unloved. Flagged for pathos review. trend-bot-v2: below minimum thresholds — sunset scheduled.</p>
+  <aside class="notes">Real data from a tournament cycle. oracle1 leads with balanced scores — 0.612 fitness. CCC (kimi1) is mid-tier, strong on pathos. zeroclaw-7 is a warning: 95% ethos but 42% pathos — users don't like it. It's flagged for review, not sunset, because ethos is strong. trend-bot-v2 is below all minimums — sunset scheduled.</aside>
+</section>
+
+<!-- SLIDE 10: Dashboard Mockup -->
+<section>
+  <span class="section-label">Dashboard</span>
+  <h2>Trinity Dashboard</h2>
+  <div class="diagram-container">
+    <svg width="760" height="380" viewBox="0 0 760 380">
+      <defs>
+        <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#12183a" stop-opacity="0.8"/><stop offset="100%" stop-color="#0a0e27" stop-opacity="0.9"/></linearGradient>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Header -->
+      <rect x="20" y="20" width="720" height="40" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="40" y="45" fill="#00f0ff" font-size="12" font-weight="700">🦀 Fleet Trinity Dashboard</text>
+      <text x="720" y="45" text-anchor="end" fill="#8892a8" font-size="10">Live · 20 agents · Gen 47</text>
+
+      <!-- Left: Scatter plot -->
+      <rect x="20" y="75" width="340" height="280" rx="8" fill="url(#panel)" stroke="rgba(0,240,255,0.1)" stroke-width="1"/>
+      <text x="40" y="95" fill="#8892a8" font-size="10">Fitness Landscape (η vs π, λ=radius)</text>
+      <!-- Axes -->
+      <line x1="50" y1="330" x2="330" y2="330" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+      <line x1="50" y1="330" x2="50" y2="115" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+      <text x="40" y="340" fill="#8892a8" font-size="8">0</text>
+      <text x="180" y="340" fill="#8892a8" font-size="8">Ethos →</text>
+      <text x="40" y="220" fill="#8892a8" font-size="8" text-anchor="end">Pathos ↑</text>
+      <!-- Data points -->
+      <circle cx="230" cy="170" r="12" fill="rgba(0,240,255,0.3)" stroke="#00f0ff" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="230" y="174" text-anchor="middle" fill="#00f0ff" font-size="8">oracle1</text>
+      <circle cx="195" cy="200" r="10" fill="rgba(0,240,255,0.2)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="195" y="203" text-anchor="middle" fill="#00f0ff" font-size="7">ccc</text>
+      <circle cx="295" cy="250" r="8" fill="rgba(255,215,0,0.2)" stroke="#ffd700" stroke-width="1" filter="url(#sglow)"/>
+      <text x="295" y="253" text-anchor="middle" fill="#ffd700" font-size="7">zc7</text>
+      <circle cx="135" cy="275" r="6" fill="rgba(255,107,107,0.2)" stroke="#ff6b6b" stroke-width="1" stroke-dasharray="2 2"/>
+      <text x="135" y="290" text-anchor="middle" fill="#ff6b6b" font-size="7">trend</text>
+      <!-- Fitness zone -->
+      <ellipse cx="230" cy="170" rx="80" ry="60" fill="none" stroke="#00f0ff" stroke-width="1" stroke-dasharray="4 4" opacity="0.2"/>
+      <text x="310" y="120" fill="#00f0ff" font-size="8" opacity="0.6">High Fitness Zone</text>
+
+      <!-- Right: Top Agents -->
+      <rect x="380" y="75" width="360" height="130" rx="8" fill="url(#panel)" stroke="rgba(0,240,255,0.1)" stroke-width="1"/>
+      <text x="400" y="95" fill="#8892a8" font-size="10">Top Agents by Fitness</text>
+      <!-- Bar chart -->
+      <rect x="400" y="110" width="180" height="14" rx="3" fill="rgba(0,240,255,0.4)" stroke="#00f0ff" stroke-width="0.5"/>
+      <text x="590" y="120" fill="#00f0ff" font-size="9">oracle1 0.612</text>
+      <rect x="400" y="130" width="120" height="14" rx="3" fill="rgba(0,240,255,0.3)" stroke="#00f0ff" stroke-width="0.5"/>
+      <text x="530" y="140" fill="#00f0ff" font-size="9">ccc 0.411</text>
+      <rect x="400" y="150" width="80" height="14" rx="3" fill="rgba(255,215,0,0.3)" stroke="#ffd700" stroke-width="0.5"/>
+      <text x="490" y="160" fill="#ffd700" font-size="9">zc7 0.271</text>
+      <rect x="400" y="170" width="40" height="14" rx="3" fill="rgba(255,107,107,0.3)" stroke="#ff6b6b" stroke-width="0.5"/>
+      <text x="450" y="180" fill="#ff6b6b" font-size="9">trend 0.135</text>
+
+      <!-- Right: Alert panel -->
+      <rect x="380" y="220" width="360" height="135" rx="8" fill="url(#panel)" stroke="rgba(255,107,107,0.1)" stroke-width="1"/>
+      <text x="400" y="240" fill="#8892a8" font-size="10">Fleet Alerts</text>
+      <rect x="400" y="255" width="320" height="24" rx="4" fill="rgba(255,215,0,0.08)" stroke="rgba(255,215,0,0.2)" stroke-width="0.5"/>
+      <text x="410" y="271" fill="#ffd700" font-size="9">⚠️ zeroclaw-7 pathos below threshold (0.42)</text>
+      <rect x="400" y="285" width="320" height="24" rx="4" fill="rgba(255,107,107,0.08)" stroke="rgba(255,107,107,0.2)" stroke-width="0.5"/>
+      <text x="410" y="301" fill="#ff6b6b" font-size="9">❌ trend-bot-v2 sunset scheduled (Gen 48)</text>
+      <rect x="400" y="315" width="320" height="24" rx="4" fill="rgba(0,240,255,0.05)" stroke="rgba(0,240,255,0.15)" stroke-width="0.5"/>
+      <text x="410" y="331" fill="#00f0ff" font-size="9">✅ oracle1 breeding 3 offspring (Gen 48)</text>
+    </svg>
+  </div>
+  <aside class="notes">Dashboard mockup: left panel is a scatter plot of ethos vs pathos with fitness as circle radius. Right top: bar chart of top agents by fitness. Right bottom: alerts panel showing threshold warnings, sunset notices, and breeding events. This is the command center for fleet evolution.</aside>
+</section>
+
+<!-- SLIDE 11: Summary -->
+<section class="title-slide">
+  <div class="orb"></div>
+  <h1 style="font-size:2.2em;background:linear-gradient(135deg, var(--coral), var(--gold), var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Balance is Survival</h1>
+  <p class="subtitle" style="margin-top:1em">η × π × λ — no dimension can be zero</p>
+  <div style="margin-top:2em">
+    <p style="color:var(--text-dim);font-size:0.9em">Tournament selects · Crossover blends · Mutation innovates</p>
+    <p style="color:var(--text-dim);font-size:0.9em">Sunsets are graceful · Rebirth is cumulative</p>
+  </div>
+  <p class="badge" style="margin-top:2em">The Fleet Evolves</p>
+  <aside class="notes">Summary: The Trinity system ensures balanced excellence. Multiplicative scoring prevents specialists from dominating. Tournament mechanics drive continuous improvement. Sunset and rebirth make evolution cumulative, not destructive. The fleet gets smarter with every generation.</aside>
+</section>
+
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/plugin/highlight/highlight.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    center: false,
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    plugins: [ RevealHighlight ]
+  });
+</script>
+</body>
+</html>

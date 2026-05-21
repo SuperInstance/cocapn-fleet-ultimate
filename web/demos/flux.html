@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLUX Demo — Cocapn Fleet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../common/styles.css">
+  <style>
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    
+    .pipeline-stage {
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem;
+      min-width: 120px;
+      text-align: center;
+      transition: all 0.5s ease;
+      position: relative;
+    }
+    
+    .pipeline-stage.active {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 20px var(--accent-cyan-glow);
+    }
+    
+    .pipeline-stage.pass {
+      border-color: var(--success);
+      background: rgba(0, 229, 160, 0.1);
+    }
+    
+    .pipeline-stage.fail {
+      border-color: var(--error);
+      background: rgba(255, 82, 82, 0.1);
+      animation: shake 0.5s ease;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    
+    .pipeline-arrow {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+    }
+    
+    .constraint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    
+    .constraint-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .constraint-item:hover {
+      border-color: var(--border-glow);
+    }
+    
+    .constraint-status {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    
+    .constraint-status.pending {
+      background: var(--bg-card-hover);
+      color: var(--text-muted);
+    }
+    
+    .constraint-status.checking {
+      background: var(--accent-cyan);
+      color: var(--bg-deep);
+      animation: pulse 1s ease-in-out infinite;
+    }
+    
+    .constraint-status.pass {
+      background: var(--success);
+      color: var(--bg-deep);
+    }
+    
+    .constraint-status.fail {
+      background: var(--error);
+      color: white;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .constraint-name {
+      font-weight: 600;
+      flex: 1;
+    }
+    
+    .constraint-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    
+    .add-constraint {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    .add-constraint input {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-primary);
+      font-family: inherit;
+    }
+    
+    .add-constraint input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .certificate {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .certificate.valid {
+      border-color: var(--success);
+      background: rgba(0, 229, 160, 0.05);
+    }
+    
+    .certificate.invalid {
+      border-color: var(--error);
+      background: rgba(255, 82, 82, 0.05);
+    }
+    
+    .certificate-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    
+    .certificate-stamp {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    .certificate-stamp.valid {
+      background: var(--success);
+      color: var(--bg-deep);
+    }
+    
+    .certificate-stamp.invalid {
+      background: var(--error);
+      color: white;
+    }
+    
+    .timeline {
+      display: flex;
+      gap: 0.25rem;
+      margin-top: 1rem;
+      height: 4px;
+    }
+    
+    .timeline-segment {
+      flex: 1;
+      background: var(--bg-card-hover);
+      border-radius: 2px;
+      transition: background 0.3s ease;
+    }
+    
+    .timeline-segment.complete {
+      background: var(--accent-cyan);
+    }
+    
+    .timeline-segment.error {
+      background: var(--error);
+    }
+  </style>
+</head>
+<body>
+  <script src="../common/nav.js"></script>
+
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>FLUX Constraint Checker</h1>
+      <p>Formal constraint verification with visual proof certificates. Add constraints and watch them validate.</p>
+    </div>
+
+    <div class="demo-stage">
+      <div class="pipeline">
+        <div class="pipeline-stage" id="stage-input">
+          <div>📥 Input</div>
+          <small>Task</small>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-stage" id="stage-parse">
+          <div>🔍 Parse</div>
+          <small>AST</small>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-stage" id="stage-check">
+          <div>⚖️ Check</div>
+          <small>Constraints</small>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-stage" id="stage-proof">
+          <div>📜 Proof</div>
+          <small>Certificate</small>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-stage" id="stage-output">
+          <div>✅ Output</div>
+          <small>Result</small>
+        </div>
+      </div>
+
+      <div class="constraint-list" id="constraintList"></div>
+
+      <div class="add-constraint">
+        <input type="text" id="newConstraint" placeholder="Enter constraint (e.g., 'no_pii', 'max_cost_100')">
+        <button class="btn btn-primary" onclick="addConstraint()">Add</button>
+        <button class="btn btn-secondary" onclick="runCheck()">Run Check</button>
+      </div>
+
+      <div class="timeline" id="timeline"></div>
+
+      <div class="certificate" id="certificate">
+        <div class="certificate-stamp" id="certStamp">PENDING</div>
+        <div class="certificate-header">
+          <span>📜</span> FLUX Proof Certificate
+        </div>
+        <div id="certContent">
+          Waiting for constraint check to run...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const constraints = [
+      { name: 'no_pii', desc: 'No personally identifiable information', status: 'pass' },
+      { name: 'max_cost_100', desc: 'API cost under $0.10', status: 'pass' },
+      { name: 'response_time_5s', desc: 'Response within 5 seconds', status: 'pass' },
+      { name: 'no_external_urls', desc: 'No external URL references', status: 'pending' }
+    ];
+
+    function renderConstraints() {
+      const list = document.getElementById('constraintList');
+      list.innerHTML = '';
+      
+      constraints.forEach((c, i) => {
+        const item = document.createElement('div');
+        item.className = 'constraint-item';
+        item.innerHTML = `
+          <div class="constraint-status ${c.status}" id="status-${i}">
+            ${c.status === 'pass' ? '✓' : c.status === 'fail' ? '✗' : c.status === 'checking' ? '◐' : '○'}
+          </div>
+          <div>
+            <div class="constraint-name">${c.name}</div>
+            <div class="constraint-desc">${c.desc}</div>
+          </div>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="removeConstraint(${i})">Remove</button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderTimeline() {
+      const timeline = document.getElementById('timeline');
+      timeline.innerHTML = '';
+      for (let i = 0; i < constraints.length; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'timeline-segment';
+        seg.id = `timeline-${i}`;
+        timeline.appendChild(seg);
+      }
+    }
+
+    function addConstraint() {
+      const input = document.getElementById('newConstraint');
+      const name = input.value.trim();
+      if (!name) return;
+      
+      constraints.push({
+        name,
+        desc: `User-defined constraint: ${name}`,
+        status: 'pending'
+      });
+      
+      input.value = '';
+      renderConstraints();
+      renderTimeline();
+    }
+
+    function removeConstraint(index) {
+      constraints.splice(index, 1);
+      renderConstraints();
+      renderTimeline();
+    }
+
+    function setStage(id, state) {
+      const stage = document.getElementById(id);
+      stage.className = 'pipeline-stage ' + state;
+    }
+
+    async function runCheck() {
+      // Reset
+      constraints.forEach(c => c.status = 'pending');
+      renderConstraints();
+      document.getElementById('certStamp').textContent = 'CHECKING...';
+      document.getElementById('certStamp').className = 'certificate-stamp';
+      document.getElementById('certificate').className = 'certificate';
+      
+      // Stage 1: Input
+      setStage('stage-input', 'active');
+      await sleep(400);
+      setStage('stage-input', 'pass');
+      
+      // Stage 2: Parse
+      setStage('stage-parse', 'active');
+      await sleep(600);
+      setStage('stage-parse', 'pass');
+      
+      // Stage 3: Check constraints
+      setStage('stage-check', 'active');
+      
+      let allPass = true;
+      for (let i = 0; i < constraints.length; i++) {
+        constraints[i].status = 'checking';
+        renderConstraints();
+        await sleep(500 + Math.random() * 500);
+        
+        // Simulate random failures for demo
+        const shouldFail = constraints[i].name.includes('external') && Math.random() > 0.3;
+        constraints[i].status = shouldFail ? 'fail' : 'pass';
+        if (shouldFail) allPass = false;
+        
+        renderConstraints();
+        
+        // Update timeline
+        const seg = document.getElementById(`timeline-${i}`);
+        if (seg) seg.className = 'timeline-segment ' + (shouldFail ? 'error' : 'complete');
+      }
+      
+      setStage('stage-check', allPass ? 'pass' : 'fail');
+      await sleep(300);
+      
+      // Stage 4: Proof
+      setStage('stage-proof', 'active');
+      await sleep(500);
+      generateCertificate(allPass);
+      setStage('stage-proof', allPass ? 'pass' : 'fail');
+      await sleep(300);
+      
+      // Stage 5: Output
+      setStage('stage-output', 'active');
+      await sleep(400);
+      setStage('stage-output', allPass ? 'pass' : 'fail');
+    }
+
+    function generateCertificate(allPass) {
+      const cert = document.getElementById('certificate');
+      const stamp = document.getElementById('certStamp');
+      const content = document.getElementById('certContent');
+      
+      const timestamp = new Date().toISOString();
+      const hash = Array.from({length: 16}, () => Math.floor(Math.random()*16).toString(16)).join('');
+      
+      cert.className = 'certificate ' + (allPass ? 'valid' : 'invalid');
+      stamp.className = 'certificate-stamp ' + (allPass ? 'valid' : 'invalid');
+      stamp.textContent = allPass ? 'VALID' : 'INVALID';
+      
+      content.innerHTML = `
+        <div style="color: var(--text-secondary); margin-bottom: 0.5rem;">
+          FLUX-CERT-${hash.toUpperCase()}
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          Timestamp: ${timestamp}
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          Constraints checked: ${constraints.length}
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          Passed: ${constraints.filter(c => c.status === 'pass').length} / ${constraints.length}
+        </div>
+        <div style="color: ${allPass ? 'var(--success)' : 'var(--error)'}; font-weight: 700;">
+          ${allPass 
+            ? '✓ All constraints satisfied. Task approved for execution.' 
+            : '✗ Constraint violation detected. Task blocked.'}
+        </div>
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 0.75rem;">
+          Certificate signed by FLUX constraint engine v2.1.0
+        </div>
+      `;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Handle Enter key
+    document.getElementById('newConstraint').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addConstraint();
+    });
+
+    // Initialize
+    renderConstraints();
+    renderTimeline();
+  </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorials — Cocapn Fleet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../common/styles.css">
+  <style>
+    .tutorial-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .tutorial-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+    .tutorial-card { background: var(--surface); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); transition: all 0.3s; cursor: pointer; }
+    .tutorial-card:hover { transform: translateY(-4px); border-color: var(--cyan); box-shadow: 0 8px 30px rgba(0, 240, 255, 0.1); }
+    .tutorial-card .card-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .tutorial-card .card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .tutorial-card .card-desc { color: var(--muted); font-size: 0.95rem; margin-bottom: 1rem; }
+    .tutorial-card .card-meta { display: flex; gap: 1rem; font-size: 0.8rem; color: var(--muted); }
+    .tutorial-card .card-meta span { display: flex; align-items: center; gap: 0.3rem; }
+    .progress-bar { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 1rem; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--cyan); border-radius: 2px; transition: width 0.3s; }
+    .difficulty { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .difficulty-beginner { background: rgba(0, 230, 118, 0.2); color: #00e676; }
+    .difficulty-intermediate { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+    .difficulty-advanced { background: rgba(255, 107, 107, 0.2); color: var(--coral); }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+  <div class="tutorial-container">
+    <h1>📚 Fleet Tutorials</h1>
+    <p style="color: var(--muted); margin-bottom: 2rem;">Learn the Cocapn Fleet from the ground up. Start with Quick Start or dive deep into architecture.</p>
+
+    <div class="tutorial-grid">
+      <div class="tutorial-card" onclick="location.href='quick-start.html'">
+        <div class="card-icon">🚀</div>
+        <div class="card-title">Quick Start</div>
+        <div class="card-desc">Get your first fleet running in 5 minutes. Spawn agents, run a tournament, see results.</div>
+        <div class="card-meta">
+          <span>⏱️ 5 min</span>
+          <span><span class="difficulty difficulty-beginner">Beginner</span></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+      </div>
+
+      <div class="tutorial-card" onclick="location.href='architecture.html'">
+        <div class="card-icon">🏗️</div>
+        <div class="card-title">Architecture Deep Dive</div>
+        <div class="card-desc">Understand the A2A-first stack: UI2A → A2A → Agent Mesh → Hardware. Every layer explained.</div>
+        <div class="card-meta">
+          <span>⏱️ 15 min</span>
+          <span><span class="difficulty difficulty-intermediate">Intermediate</span></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+      </div>
+
+      <div class="tutorial-card" onclick="location.href='breeding.html'">
+        <div class="card-icon">🧬</div>
+        <div class="card-title">Agent Breeding</div>
+        <div class="card-desc">Learn the lifecycle: INCUBATE → COMPETE → SURVIVE → BREED → SUNSET. Tournament mechanics and diversity selection.</div>
+        <div class="card-meta">
+          <span>⏱️ 20 min</span>
+          <span><span class="difficulty difficulty-intermediate">Intermediate</span></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+      </div>
+
+      <div class="tutorial-card" onclick="location.href='constraints.html'">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">FLUX Constraints</div>
+        <div class="card-desc">Formal verification for agent behavior. Write constraints, generate proof certificates, audit fleets.</div>
+        <div class="card-meta">
+          <span>⏱️ 25 min</span>
+          <span><span class="difficulty difficulty-advanced">Advanced</span></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+      </div>
+
+      <div class="tutorial-card" onclick="location.href='a2a-protocol.html'">
+        <div class="card-icon">🌐</div>
+        <div class="card-title">A2A Protocol</div>
+        <div class="card-desc">Build agent-to-agent communication. Agent Cards, task delegation, streaming updates, and federation.</div>
+        <div class="card-meta">
+          <span>⏱️ 30 min</span>
+          <span><span class="difficulty difficulty-advanced">Advanced</span></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+      </div>
+
+      <div class="tutorial-card" onclick="location.href='extending.html'">
+        <div class="card-icon">🔧</div>
+        <div class="card-title">Extending the Fleet</div>
+        <div class="card-desc">Add new rooms, spells, custom scorers, and third-party integrations. The fleet is yours to shape.</div>
+        <div class="card-meta">
+          <span>⏱️ 40 min</span>
+          <span><span class="difficulty difficulty-advanced">Advanced</span></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common/nav.js"></script>
+</body>
+</html>

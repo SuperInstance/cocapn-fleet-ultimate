@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technical Specification — Cocapn Fleet</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.0/dist/theme/black.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <style>
+    :root {
+      --r-background-color: #0a0e27;
+      --r-main-font: 'Inter', -apple-system, sans-serif;
+      --r-main-color: #e8ecf1;
+      --r-heading-color: #00f0ff;
+      --r-heading-font: 'Inter', -apple-system, sans-serif;
+      --r-link-color: #ff6b6b;
+      --r-accent: #8b5cf6;
+    }
+    .reveal { font-family: var(--r-main-font); }
+    .reveal h1, .reveal h2, .reveal h3 { 
+      font-weight: 800; 
+      text-transform: none; 
+      letter-spacing: -0.02em;
+    }
+    .reveal h1 { font-size: 2.2em; }
+    .reveal h2 { font-size: 1.6em; }
+    .reveal code { 
+      font-family: 'JetBrains Mono', monospace; 
+      background: rgba(0, 240, 255, 0.1); 
+      padding: 0.2em 0.4em; 
+      border-radius: 4px;
+    }
+    .reveal pre code { 
+      background: #1a1f3a; 
+      padding: 1em; 
+      border-radius: 8px;
+      font-size: 0.75em;
+      line-height: 1.5;
+    }
+    .reveal .slides section { text-align: left; }
+    .reveal .slides section.title-slide { text-align: center; }
+    .tag { 
+      display: inline-block; 
+      padding: 0.3em 0.8em; 
+      border-radius: 50px; 
+      font-size: 0.75em; 
+      font-weight: 600; 
+      margin: 0.2em;
+    }
+    .tag-cyan { background: rgba(0, 240, 255, 0.2); color: #00f0ff; }
+    .tag-coral { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+    .tag-green { background: rgba(0, 230, 118, 0.2); color: #00e676; }
+    .metric { display: inline-block; margin: 1em; text-align: center; }
+    .metric-value { font-size: 2.5em; font-weight: 800; color: var(--r-heading-color); }
+    .metric-label { font-size: 0.8em; color: var(--r-main-color); opacity: 0.7; }
+    table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+    th, td { padding: 0.6em; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; }
+    th { color: var(--r-heading-color); font-weight: 600; }
+    .arch-diagram { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin: 2em 0;
+    }
+    .arch-box { 
+      padding: 1em; 
+      background: rgba(0, 240, 255, 0.1); 
+      border: 1px solid rgba(0, 240, 255, 0.3); 
+      border-radius: 8px; 
+      text-align: center;
+      flex: 1;
+      margin: 0 0.5em;
+    }
+    .arch-arrow { color: var(--r-heading-color); font-size: 1.5em; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <!-- Title -->
+      <section class="title-slide">
+        <h1>⚡ Technical Specification</h1>
+        <p style="font-size: 1.2em; opacity: 0.8;">Cocapn Fleet — Implementation Details</p>
+        <p style="margin-top: 2em;">
+          <span class="tag tag-cyan">Python 3.10+</span>
+          <span class="tag tag-coral">Turbovec</span>
+          <span class="tag tag-green">FLUX VM</span>
+        </p>
+        <aside class="notes">Conference-level technical deep dive. Target audience: engineers evaluating adoption.</aside>
+      </section>
+
+      <!-- Repo Structure -->
+      <section>
+        <h2>📁 Repository Structure</h2>
+        <pre><code class="language-bash">cocapn-fleet-ultimate/
+├── src/cocapn_fleet/          # Core Python package (~8,700 lines)
+│   ├── core/                  # FleetCore + AgentDNA
+│   ├── a2a/                   # A2A client/server
+│   ├── plato/                 # Room system
+│   ├── flux/                  # Constraint checker
+│   ├── trinity/               # Fitness scoring
+│   ├── breeding/              # Lifecycle orchestrator
+│   ├── grammar/               # Secure rule engine
+│   └── nexus/                 # Federation
+├── web/                       # Landing pages + demos
+├── presentations/             # Reveal.js slide decks
+├── tests/                     # Comprehensive test suite
+└── docs/                      # Architecture + tutorials</code></pre>
+      </section>
+
+      <!-- Turbovec Integration -->
+      <section>
+        <h2>🧬 Turbovec DNA Index</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+          <div>
+            <h3>API</h3>
+            <pre><code class="language-python">from cocapn_fleet import FleetCore
+
+fleet = FleetCore(FleetConfig(dim=256, bit_width=4))
+agent = fleet.spawn(name="explorer")
+
+# Search nearest neighbors
+neighbors = fleet.dna.search(agent.vector, k=5)
+
+# Stats
+print(fleet.dna.stats())
+# {'agents': 1, 'dim': 256, 'compression': '4-bit'}</code></pre>
+          </div>
+          <div>
+            <h3>Benchmarks</h3>
+            <table>
+              <tr><th>Metric</th><th>Value</th></tr>
+              <tr><td>Build 1K agents (dim=128)</td><td>1.06s</td></tr>
+              <tr><td>Search 1K agents</td><td>105ms</td></tr>
+              <tr><td>Memory per agent</td><td>128 bytes</td></tr>
+              <tr><td>Compression ratio</td><td>8:1</td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- FLUX Architecture -->
+      <section>
+        <h2>⚡ FLUX VM v3 Architecture</h2>
+        <div class="arch-diagram">
+          <div class="arch-box">Bytecode<br><small>50+ opcodes</small></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box">Stack Machine<br><small>Typed slots</small></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box">Proof Gen<br><small>SHA-256 chain</small></div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box">Certificate<br><small>JSON artefact</small></div>
+        </div>
+        <pre><code class="language-python"># Check constraint
+flux = FLUXChecker()
+cert = flux.check("temperature < 300", reading=295.4, domain="aviation")
+
+assert cert.result == "PASS"
+assert cert.verify()  # Tamper check</code></pre>
+      </section>
+
+      <!-- PLATO Rooms -->
+      <section>
+        <h2>🏛️ PLATO Room System</h2>
+        <table>
+          <tr><th>Room</th><th>Role</th><th>Spells</th><th>A2A Namespace</th></tr>
+          <tr><td>Harbor</td><td>Task inbox</td><td>summon_scout</td><td>ingress.local</td></tr>
+          <tr><td>Forge</td><td>Build env</td><td>lightning_bolt, brush_of_design</td><td>build.local</td></tr>
+          <tr><td>Tide Pool</td><td>Research</td><td>scry</td><td>research.local</td></tr>
+          <tr><td>Engine Room</td><td>Infrastructure</td><td>shield</td><td>infra.local</td></tr>
+          <tr><td>Barracks</td><td>Crew status</td><td>mirror_of_identity</td><td>crew.local</td></tr>
+          <tr><td>Archives</td><td>Persistence</td><td>pen_of_memory</td><td>storage.local</td></tr>
+          <tr><td>Ouroboros</td><td>Self-reflection</td><td>lens_of_architecture</td><td>audit.local</td></tr>
+          <tr><td>Nexus</td><td>Federation</td><td>nexus_link, baton_pass</td><td>federation.local</td></tr>
+        </table>
+      </section>
+
+      <!-- Breeding Flow -->
+      <section>
+        <h2>🔄 Breeding Daemon Flow</h2>
+        <pre><code class="language-python"># One tick = one complete lifecycle
+result = fleet.tick()
+
+# Returns:
+{
+  "generation": 42,
+  "stats": {
+    "total_agents": 100,
+    "survivors": 65,
+    "breeders": 20,
+    "sunset": 15,
+    "children": 10
+  }
+}</code></pre>
+        <div style="margin-top: 1em;">
+          <span class="tag tag-cyan">Diversity-seeking selection</span>
+          <span class="tag tag-coral">Thermal budget aware</span>
+          <span class="tag tag-green">Formal sunset docs</span>
+        </div>
+      </section>
+
+      <!-- Grammar Security -->
+      <section>
+        <h2>🔒 Grammar Engine Security</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+          <div>
+            <h3>Blocked Patterns</h3>
+            <ul>
+              <li><code>../</code> — Path traversal</li>
+              <li><code>&lt;script</code> — XSS</li>
+              <li><code>DROP TABLE</code> — SQL injection</li>
+              <li><code>__import__, eval(</code> — Code exec</li>
+              <li><code>rm -rf</code> — Command injection</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Safe Actions</h3>
+            <ul>
+              <li><code>boost_priority</code></li>
+              <li><code>reduce_priority</code></li>
+              <li><code>log, notify</code></li>
+              <li><code>spawn_child</code></li>
+              <li><code>archive, migrate, tag</code></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Nexus Federation -->
+      <section>
+        <h2>🌐 Fleet Nexus Federation</h2>
+        <pre><code class="language-python">nexus = FleetNexus(endpoint="http://nexus.fleet.local")
+
+# Register nodes
+nexus.register("oracle1", "Oracle1", "http://147.224.38.131")
+nexus.register("ccc", "CCC", "http://ccc.fleet.local")
+nexus.register("jc1", "JetsonClaw1", "http://jc1.fleet.local")
+
+# Heartbeat
+nexus.heartbeat("oracle1", metrics={"cpu": 45, "mem": 60})
+
+# Fleet-wide status
+print(nexus.status())
+# {'nodes': {'total': 3, 'alive': 3}, 'agents': 247}</code></pre>
+      </section>
+
+      <!-- Benchmarks -->
+      <section>
+        <h2>📊 Performance Benchmarks</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em; text-align: center;">
+          <div class="metric">
+            <div class="metric-value">1.06s</div>
+            <div class="metric-label">Build 1K agents<br>(dim=128)</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">105ms</div>
+            <div class="metric-label">Search 1K agents<br>(turbovec)</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">16ms</div>
+            <div class="metric-label">Search 10K agents<br>(numpy fallback)</div>
+          </div>
+        </div>
+        <div style="margin-top: 2em; text-align: center;">
+          <span class="tag tag-cyan">x86_64 + OpenBLAS</span>
+          <span class="tag tag-coral">NEON on ARM64 (pending)</span>
+        </div>
+      </section>
+
+      <!-- Testing -->
+      <section>
+        <h2>🧪 Testing Strategy</h2>
+        <pre><code class="language-bash">pytest tests/ -v --tb=short
+
+# Test breakdown:
+tests/test_core.py      # FleetCore lifecycle
+tests/test_dna.py       # AgentDNA operations
+tests/test_trinity.py   # Scoring algorithms
+tests/test_a2a.py       # Client/server protocol
+tests/test_plato.py     # Room system
+tests/test_flux.py      # Constraint checking
+tests/test_breeding.py  # Lifecycle
+tests/test_grammar.py   # Security validation
+tests/test_nexus.py     # Federation
+tests/test_cli.py       # Commands
+
+# Coverage target: 90%+</code></pre>
+      </section>
+
+      <!-- Deployment -->
+      <section>
+        <h2>🚀 Deployment</h2>
+        <pre><code class="language-bash"># Install
+pip install cocapn-fleet
+
+# Run demo
+cocapn-fleet demo
+
+# Start fleet server
+cocapn-fleet serve --host 0.0.0.0 --port 8080
+
+# Production (systemd)
+systemctl enable cocapn-fleet
+systemctl start cocapn-fleet
+
+# Docker
+docker run -p 8080:8080 superinstance/cocapn-fleet</code></pre>
+      </section>
+
+      <!-- Final -->
+      <section class="title-slide">
+        <h1>🔥 The Fleet Awaits</h1>
+        <p style="font-size: 1.2em; margin-top: 2em;">
+          <code>git clone https://github.com/SuperInstance/cocapn-fleet-ultimate.git</code>
+        </p>
+        <p style="margin-top: 1em;">
+          <span class="tag tag-cyan">MIT License</span>
+          <span class="tag tag-coral">Open Source</span>
+          <span class="tag tag-green">Fleet Ready</span>
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.0/dist/reveal.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'fade',
+    });
+    hljs.highlightAll();
+  </script>
+</body>
+</html>

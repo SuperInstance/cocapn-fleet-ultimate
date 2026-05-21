@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A2A Architecture — Cocapn Fleet</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --abyss: #0a0e27;
+      --abyss-light: #12183a;
+      --cyan: #00f0ff;
+      --cyan-dim: #00b8c4;
+      --coral: #ff6b6b;
+      --coral-dim: #cc5555;
+      --text: #e8ecf1;
+      --text-dim: #8892a8;
+      --gold: #ffd700;
+    }
+    .reveal { font-family: 'Inter', system-ui, sans-serif; background: var(--abyss); }
+    .reveal .slides { text-align: left; }
+    .reveal h1, .reveal h2, .reveal h3 { font-weight: 700; color: var(--text); text-transform: none; letter-spacing: -0.02em; }
+    .reveal h1 { font-size: 2.8em; font-weight: 900; }
+    .reveal h2 { font-size: 2em; color: var(--cyan); }
+    .reveal h3 { font-size: 1.4em; color: var(--text-dim); }
+    .reveal p, .reveal li { color: var(--text-dim); font-size: 0.85em; line-height: 1.6; }
+    .reveal ul { list-style: none; }
+    .reveal ul li::before { content: "▸"; color: var(--cyan); margin-right: 0.5em; }
+    .reveal .slide-number { background: var(--cyan); color: var(--abyss); font-weight: 700; }
+    .reveal .controls { color: var(--cyan); }
+    .reveal .progress { background: var(--abyss-light); height: 3px; }
+    .reveal .progress span { background: var(--cyan); }
+
+    .title-slide { text-align: center !important; }
+    .title-slide h1 { font-size: 3.2em; background: linear-gradient(135deg, var(--cyan), var(--coral)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .title-slide .subtitle { font-size: 1.3em; color: var(--text-dim); margin-top: 0.5em; font-weight: 300; }
+    .title-slide .badge { display: inline-block; background: var(--abyss-light); border: 1px solid var(--cyan); color: var(--cyan); padding: 0.3em 1em; border-radius: 2em; font-size: 0.7em; margin-top: 2em; letter-spacing: 0.1em; text-transform: uppercase; }
+    .title-slide .orb { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, var(--cyan), transparent 70%); filter: blur(20px); opacity: 0.6; position: absolute; top: 20%; left: 50%; transform: translateX(-50%); animation: pulse 4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.5; } 50% { transform: translateX(-50%) scale(1.2); opacity: 0.8; } }
+
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2em; margin-top: 1.5em; }
+    .card { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.15); border-radius: 12px; padding: 1.2em; transition: all 0.3s ease; }
+    .card:hover { border-color: var(--cyan); transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,240,255,0.1); }
+    .card .icon { font-size: 2em; margin-bottom: 0.3em; }
+    .card h4 { color: var(--cyan); margin: 0 0 0.3em; font-size: 1em; }
+    .card p { font-size: 0.75em; margin: 0; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2em; align-items: center; }
+    .col-text h2 { margin-top: 0; }
+    .col-visual { display: flex; justify-content: center; }
+
+    .diagram-container { width: 100%; display: flex; justify-content: center; }
+    .diagram-container svg { max-width: 90%; height: auto; }
+
+    .reveal pre { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.1); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .reveal pre code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.75em; line-height: 1.5; }
+
+    .section-label { display: inline-block; background: var(--coral); color: var(--abyss); padding: 0.2em 0.8em; border-radius: 4px; font-size: 0.6em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5em; }
+    .fragment { opacity: 0; transition: all 0.5s ease; }
+    .fragment.visible { opacity: 1; }
+    .fragment.grow-up { transform: translateY(20px); }
+    .fragment.grow-up.visible { transform: translateY(0); }
+
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    .comparison-table th { background: var(--abyss-light); color: var(--cyan); padding: 0.6em; text-align: left; font-size: 0.8em; border-bottom: 2px solid var(--cyan); }
+    .comparison-table td { padding: 0.6em; font-size: 0.75em; color: var(--text-dim); border-bottom: 1px solid rgba(0,240,255,0.1); }
+    .comparison-table tr:hover td { background: rgba(0,240,255,0.03); }
+    .yes { color: var(--cyan); font-weight: 700; }
+    .no { color: var(--coral); opacity: 0.7; }
+    .partial { color: var(--gold); }
+
+    .flow-arrow { text-align: center; font-size: 2em; color: var(--cyan); }
+    .flow-step { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.2); border-radius: 8px; padding: 0.8em 1em; text-align: center; }
+    .flow-step strong { color: var(--cyan); font-size: 0.9em; }
+    .flow-step p { font-size: 0.7em; margin: 0.3em 0 0; }
+
+    .glow-cyan { text-shadow: 0 0 20px rgba(0,240,255,0.4); }
+    .glow-coral { text-shadow: 0 0 20px rgba(255,107,107,0.4); }
+
+    .stat-block { text-align: center; padding: 1em; }
+    .stat-block .number { font-size: 2.5em; font-weight: 900; color: var(--cyan); line-height: 1; }
+    .stat-block .label { font-size: 0.75em; color: var(--text-dim); margin-top: 0.3em; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- SLIDE 1: Title -->
+<section class="title-slide">
+  <div class="orb"></div>
+  <h1 style="font-size:2.6em">A2A Architecture</h1>
+  <p class="subtitle">The Protocol That Binds the Fleet</p>
+  <p class="badge">Agent-to-Agent Protocol Deep-Dive</p>
+  <aside class="notes">Welcome to the A2A architecture presentation. We're going deep on how agents talk to each other, why A2A matters, and how the fleet extends it with evolutionary pressure.</aside>
+</section>
+
+<!-- SLIDE 2: What is A2A? -->
+<section>
+  <span class="section-label">Protocol</span>
+  <h2>What is A2A?</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">A2A (<strong style="color:var(--cyan)">Agent-to-Agent</strong>) is Google's open protocol for autonomous agents to discover, negotiate, and collaborate.</p>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🎯 Design Goal</h4>
+        <p>Any agent from any vendor should be able to work with any other agent, regardless of underlying model or framework.</p>
+      </div>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>📜 Open Standard</h4>
+        <p>Published by Google, Apache 2.0 licensed. Not a product — a protocol anyone can implement.</p>
+      </div>
+    </div>
+    <div class="col-visual">
+      <svg width="320" height="300" viewBox="0 0 320 300">
+        <defs>
+          <radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.25"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="160" cy="150" r="130" fill="url(#g1)"/>
+        <g stroke="#00f0ff" stroke-width="1.5" fill="#0a0e27">
+          <rect x="120" y="30" width="80" height="40" rx="6"/>
+          <rect x="230" y="110" width="80" height="40" rx="6"/>
+          <rect x="230" y="190" width="80" height="40" rx="6"/>
+          <rect x="120" y="230" width="80" height="40" rx="6"/>
+          <rect x="10" y="190" width="80" height="40" rx="6"/>
+          <rect x="10" y="110" width="80" height="40" rx="6"/>
+        </g>
+        <text x="160" y="55" text-anchor="middle" fill="#00f0ff" font-size="11" font-weight="700">Discovery</text>
+        <text x="270" y="135" text-anchor="middle" fill="#00f0ff" font-size="11" font-weight="700">Negotiate</text>
+        <text x="270" y="215" text-anchor="middle" fill="#00f0ff" font-size="11" font-weight="700">Delegate</text>
+        <text x="160" y="255" text-anchor="middle" fill="#00f0ff" font-size="11" font-weight="700">Execute</text>
+        <text x="50" y="215" text-anchor="middle" fill="#00f0ff" font-size="11" font-weight="700">Report</text>
+        <text x="50" y="135" text-anchor="middle" fill="#00f0ff" font-size="11" font-weight="700">Authenticate</text>
+        <circle cx="160" cy="150" r="30" fill="#0a0e27" stroke="#ff6b6b" stroke-width="2"/>
+        <text x="160" y="155" text-anchor="middle" fill="#ff6b6b" font-size="12" font-weight="700">A2A</text>
+        <!-- connecting lines -->
+        <line x1="160" y1="70" x2="160" y2="120" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+        <line x1="200" y1="150" x2="230" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+        <line x1="200" y1="150" x2="230" y2="210" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+        <line x1="160" y1="180" x2="160" y2="230" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+        <line x1="120" y1="150" x2="90" y2="190" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+        <line x1="120" y1="150" x2="90" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+  <aside class="notes">A2A is an open protocol, not a product. Six stages: discovery, authentication, negotiation, delegation, execution, reporting. The hexagon layout in the SVG shows this cycle.</aside>
+</section>
+
+<!-- SLIDE 3: A2A vs MCP vs APIs -->
+<section>
+  <span class="section-label">Comparison</span>
+  <h2>A2A vs MCP vs Traditional APIs</h2>
+  <table class="comparison-table">
+    <thead>
+      <tr><th>Dimension</th><th>Traditional API</th><th>MCP</th><th>A2A</th></tr>
+    </thead>
+    <tbody>
+      <tr class="fragment">
+        <td><strong>Granularity</strong></td>
+        <td>Function calls</td>
+        <td>Tool registry</td>
+        <td class="yes">Agent-level tasks</td>
+      </tr>
+      <tr class="fragment">
+        <td><strong>Discovery</strong></td>
+        <td class="no">Static docs</td>
+        <td>Tool catalog</td>
+        <td class="yes">Dynamic agent cards</td>
+      </tr>
+      <tr class="fragment">
+        <td><strong>Negotiation</strong></td>
+        <td class="no">None</td>
+        <td class="no">None</td>
+        <td class="yes">Bidirectional</td>
+      </tr>
+      <tr class="fragment">
+        <td><strong>State</strong></td>
+        <td>Per-request</td>
+        <td>Session</td>
+        <td class="yes">Task lifecycle</td>
+      </tr>
+      <tr class="fragment">
+        <td><strong>Human-in-loop</strong></td>
+        <td class="no">External</td>
+        <td class="no">External</td>
+        <td class="yes">Built-in</td>
+      </tr>
+      <tr class="fragment">
+        <td><strong>Multi-agent</strong></td>
+        <td class="no">No</td>
+        <td class="partial">Hub-spoke</td>
+        <td class="yes">Mesh native</td>
+      </tr>
+      <tr class="fragment">
+        <td><strong>Artifacts</strong></td>
+        <td class="no">Single response</td>
+        <td class="no">Single response</td>
+        <td class="yes">Rich media</td>
+      </tr>
+    </tbody>
+  </table>
+  <aside class="notes">The key distinction: APIs call functions, MCP registers tools, but A2A delegates to autonomous agents. A2A is the only one with built-in negotiation, human-in-the-loop, and rich artifact exchange.</aside>
+</section>
+
+<!-- SLIDE 4: Agent Cards -->
+<section>
+  <span class="section-label">Discovery</span>
+  <h2>Agent Cards — Self-Describing Agents</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">Every fleet agent exposes an <strong style="color:var(--cyan)">Agent Card</strong> at a well-known URL. Think of it as a resume + API spec + personality profile.</p>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🔍 Discovery Flow</h4>
+        <p>1. Agent A queries directory or scans known hosts<br>2. Fetches /.well-known/agent.json<br>3. Parses capabilities, skills, auth requirements<br>4. Decides if delegation makes sense</p>
+      </div>
+    </div>
+    <div class="col-visual">
+      <pre style="width:100%"><code class="language-json">{
+  "name": "flux-executor-v3",
+  "description": "FLUX VM runtime
+    with formal proofs",
+  "url": "https://flux.cocapn
+    .fleet/a2a",
+  "version": "3.2.1",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": true,
+    "stateTransitionHistory": true
+  },
+  "authentication": {
+    "schemes": ["OAuth2"],
+    "credentials": "https://auth
+      .cocapn.fleet/oauth"
+  },
+  "skills": [
+    {
+      "id": "verify",
+      "name": "Formal Verification",
+      "tags": ["safety", "realtime"]
+    },
+    {
+      "id": "execute",
+      "name": "Bytecode Execution",
+      "tags": ["vm", "edge"]
+    }
+  ]
+}
+</code></pre>
+    </div>
+  </div>
+  <aside class="notes">Agent Cards are the foundation of discovery. JSON metadata at a well-known URL. Skills have tags for matchmaking. The example shows a FLUX executor with two skills: formal verification and bytecode execution.</aside>
+</section>
+
+<!-- SLIDE 5: Task Delegation Flow -->
+<section>
+  <span class="section-label">Delegation</span>
+  <h2>Task Delegation Flow</h2>
+  <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:0.8em;align-items:center;margin-top:1.5em">
+    <div class="flow-step fragment">
+      <strong>1. SEND</strong>
+      <p>Agent A POSTs task to Agent B</p>
+    </div>
+    <div class="flow-arrow fragment">→</div>
+    <div class="flow-step fragment">
+      <strong>2. ACK</strong>
+      <p>B validates, creates task ID</p>
+    </div>
+    <div class="flow-arrow fragment">→</div>
+    <div class="flow-step fragment">
+      <strong>3. STREAM</strong>
+      <p>Real-time status + artifacts</p>
+    </div>
+    <div class="flow-arrow fragment">→</div>
+    <div class="flow-step fragment">
+      <strong>4. RESOLVE</strong>
+      <p>Final output or error</p>
+    </div>
+  </div>
+  <div class="diagram-container" style="margin-top:1.5em">
+    <svg width="760" height="180" viewBox="0 0 760 180">
+      <defs>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Agent A -->
+      <rect x="20" y="60" width="100" height="60" rx="8" fill="#12183a" stroke="#00f0ff" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="70" y="92" text-anchor="middle" fill="#00f0ff" font-size="12" font-weight="700">Agent A</text>
+      <!-- Arrow A→B -->
+      <path d="M120 90 L250 90" stroke="#00f0ff" stroke-width="2" fill="none" marker-end="url(#aend)"/>
+      <defs><marker id="aend" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f0ff"/></marker></defs>
+      <text x="185" y="80" text-anchor="middle" fill="#8892a8" font-size="9">POST /tasks</text>
+
+      <!-- Task Object -->
+      <rect x="260" y="40" width="120" height="100" rx="8" fill="#12183a" stroke="#ffd700" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="320" y="65" text-anchor="middle" fill="#ffd700" font-size="11" font-weight="700">Task Object</text>
+      <text x="320" y="85" text-anchor="middle" fill="#8892a8" font-size="8">id: task-uuid</text>
+      <text x="320" y="100" text-anchor="middle" fill="#8892a8" font-size="8">status: working</text>
+      <text x="320" y="115" text-anchor="middle" fill="#8892a8" font-size="8">artifacts: [...]</text>
+      <text x="320" y="130" text-anchor="middle" fill="#8892a8" font-size="8">history: [...]</text>
+
+      <!-- Arrow B→A -->
+      <path d="M380 90 L510 90" stroke="#ff6b6b" stroke-width="2" fill="none" marker-end="url(#bend)"/>
+      <defs><marker id="bend" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ff6b6b"/></marker></defs>
+      <text x="445" y="80" text-anchor="middle" fill="#8892a8" font-size="9">SSE /tasks/{id}</text>
+
+      <!-- Agent B -->
+      <rect x="520" y="60" width="100" height="60" rx="8" fill="#12183a" stroke="#ff6b6b" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="570" y="92" text-anchor="middle" fill="#ff6b6b" font-size="12" font-weight="700">Agent B</text>
+
+      <!-- Human loop -->
+      <rect x="640" y="20" width="100" height="40" rx="8" fill="#12183a" stroke="#ffd700" stroke-width="1" opacity="0.7" filter="url(#sglow)"/>
+      <text x="690" y="45" text-anchor="middle" fill="#ffd700" font-size="10">Human Loop</text>
+      <line x1="620" y1="60" x2="660" y2="60" stroke="#ffd700" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+    </svg>
+  </div>
+  <aside class="notes">The delegation flow is four steps with a central Task object. Agent A sends a task, B acknowledges with a task ID, then streams real-time updates via Server-Sent Events. The Task object carries status, artifacts, and full history. Human-in-the-loop is built-in, not bolted on.</aside>
+</section>
+
+<!-- SLIDE 6: The Post-Coding Stack -->
+<section>
+  <span class="section-label">Paradigm</span>
+  <h2>The Post-Coding Stack</h2>
+  <div class="diagram-container">
+    <svg width="720" height="380" viewBox="0 0 720 380">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.2"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0.05"/></linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6b6b" stop-opacity="0.2"/><stop offset="100%" stop-color="#ff6b6b" stop-opacity="0.05"/></linearGradient>
+        <linearGradient id="lg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffd700" stop-opacity="0.2"/><stop offset="100%" stop-color="#ffd700" stop-opacity="0.05"/></linearGradient>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Left: Traditional -->
+      <text x="160" y="30" text-anchor="middle" fill="#ff6b6b" font-size="14" font-weight="700">Traditional Stack</text>
+      <rect x="60" y="50" width="200" height="40" rx="6" fill="url(#lg2)" stroke="#ff6b6b" stroke-width="1" filter="url(#sglow)"/>
+      <text x="160" y="75" text-anchor="middle" fill="#ff6b6b" font-size="11">Human writes code</text>
+      <text x="270" y="70" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="60" y="100" width="200" height="40" rx="6" fill="url(#lg2)" stroke="#ff6b6b" stroke-width="1" filter="url(#sglow)"/>
+      <text x="160" y="125" text-anchor="middle" fill="#ff6b6b" font-size="11">Code compiles</text>
+      <text x="270" y="120" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="60" y="150" width="200" height="40" rx="6" fill="url(#lg2)" stroke="#ff6b6b" stroke-width="1" filter="url(#sglow)"/>
+      <text x="160" y="175" text-anchor="middle" fill="#ff6b6b" font-size="11">Deploy binary</text>
+      <text x="270" y="170" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="60" y="200" width="200" height="40" rx="6" fill="url(#lg2)" stroke="#ff6b6b" stroke-width="1" filter="url(#sglow)"/>
+      <text x="160" y="225" text-anchor="middle" fill="#ff6b6b" font-size="11">User interacts</text>
+
+      <!-- Divider -->
+      <line x1="360" y1="40" x2="360" y2="360" stroke="#8892a8" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/>
+
+      <!-- Right: Post-Coding -->
+      <text x="560" y="30" text-anchor="middle" fill="#00f0ff" font-size="14" font-weight="700">Post-Coding Stack</text>
+      <rect x="460" y="50" width="200" height="40" rx="6" fill="url(#lg1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="560" y="75" text-anchor="middle" fill="#00f0ff" font-size="11">User states intent</text>
+      <text x="450" y="70" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="460" y="100" width="200" height="40" rx="6" fill="url(#lg1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="560" y="125" text-anchor="middle" fill="#00f0ff" font-size="11">UI2A translates</text>
+      <text x="450" y="120" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="460" y="150" width="200" height="40" rx="6" fill="url(#lg1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="560" y="175" text-anchor="middle" fill="#00f0ff" font-size="11">A2A delegates</text>
+      <text x="450" y="170" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="460" y="200" width="200" height="40" rx="6" fill="url(#lg1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="560" y="225" text-anchor="middle" fill="#00f0ff" font-size="11">Agents negotiate + build</text>
+      <text x="450" y="220" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="460" y="250" width="200" height="40" rx="6" fill="url(#lg1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="560" y="275" text-anchor="middle" fill="#00f0ff" font-size="11">FLUX executes</text>
+      <text x="450" y="270" text-anchor="middle" fill="#8892a8" font-size="16">↓</text>
+      <rect x="460" y="300" width="200" height="40" rx="6" fill="url(#lg3)" stroke="#ffd700" stroke-width="1" filter="url(#sglow)"/>
+      <text x="560" y="325" text-anchor="middle" fill="#ffd700" font-size="11">Result delivered</text>
+    </svg>
+  </div>
+  <aside class="notes">Side-by-side comparison. Traditional: human writes code, compiles, deploys, user interacts. Post-coding: user states intent, UI2A translates to agent-speak, A2A delegates, agents negotiate and build, FLUX executes, result delivered. The user never sees code.</aside>
+</section>
+
+<!-- SLIDE 7: User → UI2A → A2A → Agent Mesh -->
+<section>
+  <span class="section-label">Flow</span>
+  <h2>User → UI2A → A2A → Agent Mesh</h2>
+  <div class="diagram-container">
+    <svg width="760" height="320" viewBox="0 0 760 320">
+      <defs>
+        <linearGradient id="lg4" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ff6b6b" stop-opacity="0.3"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0.3"/></linearGradient>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- User -->
+      <circle cx="80" cy="160" r="40" fill="#12183a" stroke="#ff6b6b" stroke-width="2" filter="url(#sglow)"/>
+      <text x="80" y="165" text-anchor="middle" fill="#ff6b6b" font-size="12" font-weight="700">User</text>
+      <!-- Arrow -->
+      <path d="M120 160 L200 160" stroke="#ff6b6b" stroke-width="2" fill="none" marker-end="url(#r1)"/>
+      <defs><marker id="r1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ff6b6b"/></marker></defs>
+      <text x="160" y="150" text-anchor="middle" fill="#8892a8" font-size="9">"Build me a</text>
+      <text x="160" y="162" text-anchor="middle" fill="#8892a8" font-size="9">dashboard"</text>
+
+      <!-- UI2A -->
+      <rect x="210" y="120" width="120" height="80" rx="8" fill="url(#lg4)" stroke="#ffd700" stroke-width="2" filter="url(#sglow)"/>
+      <text x="270" y="150" text-anchor="middle" fill="#ffd700" font-size="13" font-weight="700">UI2A</text>
+      <text x="270" y="170" text-anchor="middle" fill="#8892a8" font-size="9">Intent Translation</text>
+      <text x="270" y="185" text-anchor="middle" fill="#8892a8" font-size="9">+ Decomposition</text>
+
+      <!-- Arrow -->
+      <path d="M330 160 L410 160" stroke="#ffd700" stroke-width="2" fill="none" marker-end="url(#r2)"/>
+      <defs><marker id="r2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffd700"/></marker></defs>
+      <text x="370" y="150" text-anchor="middle" fill="#8892a8" font-size="9">A2A Task</text>
+      <text x="370" y="162" text-anchor="middle" fill="#8892a8" font-size="9">Objects</text>
+
+      <!-- A2A Router -->
+      <rect x="420" y="120" width="120" height="80" rx="8" fill="#12183a" stroke="#00f0ff" stroke-width="2" filter="url(#sglow)"/>
+      <text x="480" y="150" text-anchor="middle" fill="#00f0ff" font-size="13" font-weight="700">A2A Router</text>
+      <text x="480" y="170" text-anchor="middle" fill="#8892a8" font-size="9">Discovery +</text>
+      <text x="480" y="185" text-anchor="middle" fill="#8892a8" font-size="9">Matchmaking</text>
+
+      <!-- Arrow -->
+      <path d="M540 140 L600 100" stroke="#00f0ff" stroke-width="1.5" fill="none" marker-end="url(#r3)"/>
+      <path d="M540 180 L600 220" stroke="#00f0ff" stroke-width="1.5" fill="none" marker-end="url(#r3)"/>
+      <path d="M540 160 L640 160" stroke="#00f0ff" stroke-width="1.5" fill="none" marker-end="url(#r3)"/>
+      <defs><marker id="r3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f0ff"/></marker></defs>
+
+      <!-- Agent Mesh -->
+      <g filter="url(#sglow)">
+        <rect x="610" y="70" width="110" height="50" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1"/>
+        <text x="665" y="95" text-anchor="middle" fill="#00f0ff" font-size="10" font-weight="700">Frontend Agent</text>
+        <text x="665" y="108" text-anchor="middle" fill="#8892a8" font-size="8">React + Tailwind</text>
+
+        <rect x="610" y="140" width="110" height="50" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1"/>
+        <text x="665" y="165" text-anchor="middle" fill="#00f0ff" font-size="10" font-weight="700">Backend Agent</text>
+        <text x="665" y="178" text-anchor="middle" fill="#8892a8" font-size="8">API + DB design</text>
+
+        <rect x="610" y="210" width="110" height="50" rx="6" fill="#12183a" stroke="#00f0ff" stroke-width="1"/>
+        <text x="665" y="235" text-anchor="middle" fill="#00f0ff" font-size="10" font-weight="700">Deploy Agent</text>
+        <text x="665" y="248" text-anchor="middle" fill="#8892a8" font-size="8">CI/CD + hosting</text>
+      </g>
+
+      <!-- Back arrows -->
+      <path d="M610 95 L560 135" stroke="#00f0ff" stroke-width="1" stroke-dasharray="3 3" fill="none" opacity="0.4"/>
+      <path d="M610 165 L560 165" stroke="#00f0ff" stroke-width="1" stroke-dasharray="3 3" fill="none" opacity="0.4"/>
+      <path d="M610 235 L560 185" stroke="#00f0ff" stroke-width="1" stroke-dasharray="3 3" fill="none" opacity="0.4"/>
+    </svg>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:1em;font-size:0.9em;color:var(--text-dim)">UI2A decomposes user intent into subtasks. A2A Router matchmakes against Agent Cards. The mesh self-organizes.</p>
+  <aside class="notes">The full flow: user states intent in natural language, UI2A decomposes it into structured subtasks, A2A Router discovers and matchmakes specialized agents, and the agent mesh self-organizes to deliver the result. Dashed lines show return communication.</aside>
+</section>
+
+<!-- SLIDE 8: FLUX as A2A Agent -->
+<section>
+  <span class="section-label">Integration</span>
+  <h2>FLUX as an A2A Agent</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">FLUX isn't just a VM — it's an <strong style="color:var(--cyan)">A2A-first agent</strong> that advertises its capabilities via an Agent Card.</p>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🎴 Agent Card Skills</h4>
+        <ul>
+          <li><strong>verify</strong> — Formal proof checking</li>
+          <li><strong>execute</strong> — Deterministic bytecode</li>
+          <li><strong>schedule</strong> — Real-time task scheduling</li>
+          <li><strong>monitor</strong> — WCET analysis</li>
+        </ul>
+      </div>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>⚡ Why This Matters</h4>
+        <p>Other agents can delegate safety-critical computation to FLUX without knowing how proofs work. They just send an A2A task.</p>
+      </div>
+    </div>
+    <div class="col-visual">
+      <pre style="width:100%"><code class="language-json">// Agent A delegates to FLUX
+{
+  "id": "verify-task-42",
+  "sessionId": "sess-xyz",
+  "status": "submitted",
+  "history": [],
+  "artifacts": [
+    {
+      "name": "proof-obligation",
+      "parts": [
+        {
+          "type": "data",
+          "data": {
+            "theorem": "memory_safety",
+            "system": "heap_allocator"
+          }
+        }
+      ]
+    }
+  ]
+}
+
+// FLUX responds
+{
+  "status": "completed",
+  "artifacts": [
+    {
+      "name": "verification-result",
+      "parts": [
+        { "type": "text", "text": "✅ PROVEN" }
+      ]
+    }
+  ]
+}
+</code></pre>
+    </div>
+  </div>
+  <aside class="notes">FLUX exposes itself as an A2A agent. Other agents send proof obligations as task artifacts, FLUX verifies them using its formally-proven engine, and returns results as structured artifacts. The calling agent doesn't need to understand Coq or proof theory.</aside>
+</section>
+
+<!-- SLIDE 9: Hardware via A2A -->
+<section>
+  <span class="section-label">Edge</span>
+  <h2>Hardware via A2A — The Edge Mesh</h2>
+  <div class="diagram-container">
+    <svg width="720" height="340" viewBox="0 0 720 340">
+      <defs>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Cloud -->
+      <rect x="280" y="20" width="160" height="50" rx="25" fill="#12183a" stroke="#00f0ff" stroke-width="2" filter="url(#sglow)"/>
+      <text x="360" y="50" text-anchor="middle" fill="#00f0ff" font-size="12" font-weight="700">Cloud Fleet Hub</text>
+
+      <!-- Jetson -->
+      <rect x="40" y="130" width="140" height="60" rx="8" fill="#12183a" stroke="#ffd700" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="110" y="155" text-anchor="middle" fill="#ffd700" font-size="11" font-weight="700">Jetson Nano</text>
+      <text x="110" y="172" text-anchor="middle" fill="#8892a8" font-size="9">128MB RAM · FLUX VM</text>
+
+      <!-- Pi -->
+      <rect x="210" y="130" width="140" height="60" rx="8" fill="#12183a" stroke="#ffd700" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="280" y="155" text-anchor="middle" fill="#ffd700" font-size="11" font-weight="700">Raspberry Pi 5</text>
+      <text x="280" y="172" text-anchor="middle" fill="#8892a8" font-size="9">8GB RAM · Agent Node</text>
+
+      <!-- Edge Gateway -->
+      <rect x="380" y="130" width="140" height="60" rx="8" fill="#12183a" stroke="#ffd700" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="450" y="155" text-anchor="middle" fill="#ffd700" font-size="11" font-weight="700">Edge Gateway</text>
+      <text x="450" y="172" text-anchor="middle" fill="#8892a8" font-size="9">A2A Router · Local Mesh</text>
+
+      <!-- MCU -->
+      <rect x="550" y="130" width="140" height="60" rx="8" fill="#12183a" stroke="#ffd700" stroke-width="1.5" filter="url(#sglow)"/>
+      <text x="620" y="155" text-anchor="middle" fill="#ffd700" font-size="11" font-weight="700">ESP32 / STM32</text>
+      <text x="620" y="172" text-anchor="middle" fill="#8892a8" font-size="9">Zerolang · Sensor Agent</text>
+
+      <!-- Sensors/Actuators -->
+      <rect x="40" y="240" width="140" height="40" rx="6" fill="#12183a" stroke="#ff6b6b" stroke-width="1" opacity="0.7" filter="url(#sglow)"/>
+      <text x="110" y="265" text-anchor="middle" fill="#ff6b6b" font-size="10">Camera · Lidar · IMU</text>
+
+      <rect x="210" y="240" width="140" height="40" rx="6" fill="#12183a" stroke="#ff6b6b" stroke-width="1" opacity="0.7" filter="url(#sglow)"/>
+      <text x="280" y="265" text-anchor="middle" fill="#ff6b6b" font-size="10">GPIO · PWM · I2C</text>
+
+      <rect x="550" y="240" width="140" height="40" rx="6" fill="#12183a" stroke="#ff6b6b" stroke-width="1" opacity="0.7" filter="url(#sglow)"/>
+      <text x="620" y="265" text-anchor="middle" fill="#ff6b6b" font-size="10">Motor · Valve · Relay</text>
+
+      <!-- Connection lines -->
+      <line x1="360" y1="70" x2="110" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+      <line x1="360" y1="70" x2="280" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+      <line x1="360" y1="70" x2="450" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+      <line x1="360" y1="70" x2="620" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.4"/>
+      <line x1="110" y1="190" x2="110" y2="240" stroke="#ff6b6b" stroke-width="1" opacity="0.3"/>
+      <line x1="280" y1="190" x2="280" y2="240" stroke="#ff6b6b" stroke-width="1" opacity="0.3"/>
+      <line x1="620" y1="190" x2="620" y2="240" stroke="#ff6b6b" stroke-width="1" opacity="0.3"/>
+      <line x1="110" y1="160" x2="280" y2="160" stroke="#ffd700" stroke-width="1" stroke-dasharray="3 3" opacity="0.3"/>
+      <line x1="450" y1="160" x2="620" y2="160" stroke="#ffd700" stroke-width="1" stroke-dasharray="3 3" opacity="0.3"/>
+    </svg>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:1em;font-size:0.9em;color:var(--text-dim)">Every device runs an A2A agent. The Edge Gateway routes between local and cloud. Sensors and actuators speak A2A via Zerolang.</p>
+  <aside class="notes">The hardware mesh: every device is an A2A agent. Jetson runs FLUX for verified computation. Pi runs full agents. MCU-class devices run Zerolang. The Edge Gateway bridges local mesh to cloud. All communication is A2A — no custom protocols needed.</aside>
+</section>
+
+<!-- SLIDE 10: Security Considerations -->
+<section>
+  <span class="section-label">Security</span>
+  <h2>Security Considerations</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5em;">
+    <div class="card fragment">
+      <div class="icon" style="color:var(--coral)">🔐</div>
+      <h4 style="color:var(--coral)">Authentication</h4>
+      <p>OAuth 2.0 + mTLS for all A2A traffic. Agent Cards declare supported schemes. Tokens rotate every 15 minutes.</p>
+    </div>
+    <div class="card fragment">
+      <div class="icon" style="color:var(--coral)">🛡️</div>
+      <h4 style="color:var(--coral)">Authorization</h4>
+      <p>Capability-based access control. Agents get fine-grained permissions per skill, not blanket access.</p>
+    </div>
+    <div class="card fragment">
+      <div class="icon" style="color:var(--coral)">🔏</div>
+      <h4 style="color:var(--coral)">Encryption</h4>
+      <p>E2EE for sensitive artifacts. Task metadata is signed. FLUX proofs are cryptographically verifiable.</p>
+    </div>
+    <div class="card fragment">
+      <div class="icon" style="color:var(--coral)">⚠️</div>
+      <h4 style="color:var(--coral)">Sandboxing</h4>
+      <p>Each agent runs in an isolated container. FLUX provides formally-verified memory isolation. No shared state.</p>
+    </div>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:1.5em;font-size:0.85em;color:var(--text-dim)">Security is not an afterthought — it's a <strong style="color:var(--coral)">first-class design constraint</strong> in the A2A spec.</p>
+  <aside class="notes">Four security layers. Auth: OAuth + mTLS. Authz: capability-based, not role-based — agents get per-skill permissions. Encryption: end-to-end for artifacts, signed metadata. Sandboxing: formal isolation from FLUX, container isolation for agents.</aside>
+</section>
+
+<!-- SLIDE 11: Implementation Path -->
+<section>
+  <span class="section-label">Roadmap</span>
+  <h2>Implementation Path</h2>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1em;margin-top:1.5em">
+    <div class="card fragment" style="text-align:center">
+      <div class="icon glow-cyan">1</div>
+      <h4>Phase 1</h4>
+      <p style="font-size:0.7em">Agent Cards + basic task exchange. Single-hub routing. Local development.</p>
+      <div class="stat-block" style="margin-top:0.5em"><div class="label">2 weeks</div></div>
+    </div>
+    <div class="card fragment" style="text-align:center">
+      <div class="icon glow-cyan">2</div>
+      <h4>Phase 2</h4>
+      <p style="font-size:0.7em">Multi-agent mesh. Streaming updates. Artifact exchange. PLATO integration.</p>
+      <div class="stat-block" style="margin-top:0.5em"><div class="label">1 month</div></div>
+    </div>
+    <div class="card fragment" style="text-align:center">
+      <div class="icon glow-cyan">3</div>
+      <h4>Phase 3</h4>
+      <p style="font-size:0.7em">Trinity scoring. Tournament breeding. FLUX delegation. Edge deployment.</p>
+      <div class="stat-block" style="margin-top:0.5em"><div class="label">3 months</div></div>
+    </div>
+    <div class="card fragment" style="text-align:center">
+      <div class="icon glow-cyan">4</div>
+      <h4>Phase 4</h4>
+      <p style="font-size:0.7em">Federated fleet. Cross-org A2A. Hardware swarm. Self-healing mesh.</p>
+      <div class="stat-block" style="margin-top:0.5em"><div class="label">6 months</div></div>
+    </div>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:1.5em;font-size:0.9em">Start with <strong style="color:var(--cyan)">one agent</strong>. Add A2A. Let it talk. The mesh emerges.</p>
+  <aside class="notes">Four-phase roadmap. Phase 1: basic Agent Cards and task exchange, 2 weeks. Phase 2: multi-agent mesh with streaming, 1 month. Phase 3: full fleet with Trinity and breeding, 3 months. Phase 4: federation and hardware swarm, 6 months. The key insight: start small.</aside>
+</section>
+
+<!-- SLIDE 12: Summary -->
+<section class="title-slide">
+  <div class="orb"></div>
+  <h1 style="font-size:2em">A2A is the Nervous System</h1>
+  <p class="subtitle" style="margin-top:1em">Discovery · Negotiation · Delegation · Execution</p>
+  <div style="margin-top:2em">
+    <p style="color:var(--text-dim);font-size:0.9em">Not a product. Not a platform. <span style="color:var(--cyan)">A protocol.</span></p>
+    <p style="color:var(--text-dim);font-size:0.9em">Any agent. Any vendor. Any framework.</p>
+  </div>
+  <p class="badge" style="margin-top:2em">google.github.io/A2A</p>
+  <aside class="notes">Summary: A2A is the nervous system of the fleet. It's a protocol, not a product. Any agent from any vendor can participate. The key verbs: discover, negotiate, delegate, execute. Reference the official Google A2A spec for implementation details.</aside>
+</section>
+
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/plugin/highlight/highlight.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    center: false,
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    plugins: [ RevealHighlight ]
+  });
+</script>
+</body>
+</html>

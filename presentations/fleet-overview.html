@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Cocapn Fleet — Ultimate Overview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --abyss: #0a0e27;
+      --abyss-light: #12183a;
+      --cyan: #00f0ff;
+      --cyan-dim: #00b8c4;
+      --coral: #ff6b6b;
+      --coral-dim: #cc5555;
+      --text: #e8ecf1;
+      --text-dim: #8892a8;
+      --gold: #ffd700;
+    }
+    .reveal { font-family: 'Inter', system-ui, sans-serif; background: var(--abyss); }
+    .reveal .slides { text-align: left; }
+    .reveal h1, .reveal h2, .reveal h3 { font-weight: 700; color: var(--text); text-transform: none; letter-spacing: -0.02em; }
+    .reveal h1 { font-size: 2.8em; font-weight: 900; }
+    .reveal h2 { font-size: 2em; color: var(--cyan); }
+    .reveal h3 { font-size: 1.4em; color: var(--text-dim); }
+    .reveal p, .reveal li { color: var(--text-dim); font-size: 0.85em; line-height: 1.6; }
+    .reveal ul { list-style: none; }
+    .reveal ul li::before { content: "▸"; color: var(--cyan); margin-right: 0.5em; }
+    .reveal .slide-number { background: var(--cyan); color: var(--abyss); font-weight: 700; }
+    .reveal .controls { color: var(--cyan); }
+    .reveal .progress { background: var(--abyss-light); height: 3px; }
+    .reveal .progress span { background: var(--cyan); }
+
+    /* Title Slide */
+    .title-slide { text-align: center !important; }
+    .title-slide h1 { font-size: 3.2em; background: linear-gradient(135deg, var(--cyan), var(--coral)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .title-slide .subtitle { font-size: 1.3em; color: var(--text-dim); margin-top: 0.5em; font-weight: 300; }
+    .title-slide .badge { display: inline-block; background: var(--abyss-light); border: 1px solid var(--cyan); color: var(--cyan); padding: 0.3em 1em; border-radius: 2em; font-size: 0.7em; margin-top: 2em; letter-spacing: 0.1em; text-transform: uppercase; }
+    .title-slide .orb { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, var(--cyan), transparent 70%); filter: blur(20px); opacity: 0.6; position: absolute; top: 20%; left: 50%; transform: translateX(-50%); animation: pulse 4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.5; } 50% { transform: translateX(-50%) scale(1.2); opacity: 0.8; } }
+
+    /* Cards */
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2em; margin-top: 1.5em; }
+    .card { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.15); border-radius: 12px; padding: 1.2em; transition: all 0.3s ease; }
+    .card:hover { border-color: var(--cyan); transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,240,255,0.1); }
+    .card .icon { font-size: 2em; margin-bottom: 0.3em; }
+    .card h4 { color: var(--cyan); margin: 0 0 0.3em; font-size: 1em; }
+    .card p { font-size: 0.75em; margin: 0; }
+
+    /* Two column */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2em; align-items: center; }
+    .col-text h2 { margin-top: 0; }
+    .col-visual { display: flex; justify-content: center; }
+
+    /* Problem/Solution blocks */
+    .problem-block { background: rgba(255,107,107,0.08); border-left: 3px solid var(--coral); padding: 1em 1.5em; border-radius: 0 8px 8px 0; }
+    .solution-block { background: rgba(0,240,255,0.08); border-left: 3px solid var(--cyan); padding: 1em 1.5em; border-radius: 0 8px 8px 0; }
+
+    /* SVG diagrams */
+    .diagram-container { width: 100%; display: flex; justify-content: center; }
+    .diagram-container svg { max-width: 90%; height: auto; }
+
+    /* Code blocks */
+    .reveal pre { background: var(--abyss-light); border: 1px solid rgba(0,240,255,0.1); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .reveal pre code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.75em; line-height: 1.5; }
+
+    /* Big stat */
+    .stat-block { text-align: center; padding: 1em; }
+    .stat-block .number { font-size: 3em; font-weight: 900; color: var(--cyan); line-height: 1; }
+    .stat-block .label { font-size: 0.8em; color: var(--text-dim); margin-top: 0.3em; }
+
+    /* Trinity colors */
+    .ethos { color: var(--coral); }
+    .pathos { color: var(--gold); }
+    .logos { color: var(--cyan); }
+
+    /* Footer on slides */
+    .fleet-footer { position: absolute; bottom: 20px; right: 30px; font-size: 0.55em; color: var(--text-dim); opacity: 0.5; }
+
+    /* Glow text */
+    .glow-cyan { text-shadow: 0 0 20px rgba(0,240,255,0.4); }
+    .glow-coral { text-shadow: 0 0 20px rgba(255,107,107,0.4); }
+
+    /* Step animations */
+    .reveal .fragment { opacity: 0; transition: all 0.5s ease; }
+    .reveal .fragment.visible { opacity: 1; }
+    .fragment.grow-up { transform: translateY(20px); }
+    .fragment.grow-up.visible { transform: translateY(0); }
+
+    /* Timeline */
+    .timeline { display: flex; justify-content: space-between; position: relative; margin-top: 2em; }
+    .timeline::before { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--coral), var(--cyan)); opacity: 0.3; }
+    .timeline-item { text-align: center; z-index: 1; background: var(--abyss); padding: 0 0.5em; }
+    .timeline-item .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--cyan); margin: 0 auto 0.5em; }
+    .timeline-item p { font-size: 0.7em; margin: 0; }
+    .timeline-item strong { color: var(--text); font-size: 0.85em; }
+
+    /* Section marker */
+    .section-label { display: inline-block; background: var(--coral); color: var(--abyss); padding: 0.2em 0.8em; border-radius: 4px; font-size: 0.6em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5em; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- SLIDE 1: Title -->
+<section class="title-slide">
+  <div class="orb"></div>
+  <h1>The Cocapn Fleet</h1>
+  <p class="subtitle">An A2A-First Agent Ecosystem for Post-Coding Applications</p>
+  <p class="badge">Cocapn Fleet MUD v3.0</p>
+  <aside class="notes">Welcome to the Cocapn Fleet overview. This presentation covers the architecture, philosophy, and technical foundation of a new kind of agent ecosystem. Think of it as a fleet of specialized ships, each with a role, communicating through a universal protocol.</aside>
+</section>
+
+<!-- SLIDE 2: What is the Cocapn Fleet? -->
+<section>
+  <span class="section-label">Introduction</span>
+  <h2>What is the Cocapn Fleet?</h2>
+  <div class="card-grid">
+    <div class="card fragment grow-up">
+      <div class="icon">🦀</div>
+      <h4>A Fleet of Agents</h4>
+      <p>20+ specialized agents with distinct roles, personalities, and domains — not one monolithic model.</p>
+    </div>
+    <div class="card fragment grow-up">
+      <div class="icon">🔗</div>
+      <h4>A2A-Native Communication</h4>
+      <p>Agents talk to each other via the Agent-to-Agent protocol, not through human-mediating APIs.</p>
+    </div>
+    <div class="card fragment grow-up">
+      <div class="icon">🌊</div>
+      <h4>A Living Ecosystem</h4>
+      <p>Agents compete, breed, and sunset based on fitness — not static deployments.</p>
+    </div>
+  </div>
+  <aside class="notes">The fleet is not a single product. It's an ecosystem where agents have roles, compete for relevance, and evolve. The metaphor is intentional: ships with different capabilities, a harbor for coordination, and tides that bring change.</aside>
+</section>
+
+<!-- SLIDE 3: The Problem -->
+<section>
+  <span class="section-label">Motivation</span>
+  <h2>The Problem</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <div class="problem-block fragment">
+        <h4 style="color:var(--coral);margin-top:0">AI Slop</h4>
+        <p>Generic outputs from models trained on the same data. Every "AI-powered" product looks identical.</p>
+      </div>
+      <div class="problem-block fragment" style="margin-top:1em">
+        <h4 style="color:var(--coral);margin-top:0">Tool Monoculture</h4>
+        <p>MCP created a single bottleneck. All agents route through the same tool registry — no diversity, no resilience.</p>
+      </div>
+      <div class="problem-block fragment" style="margin-top:1em">
+        <h4 style="color:var(--coral);margin-top:0">The Cathedral Problem</h4>
+        <p>Teams build cathedrals when sheds are needed. Over-engineered, under-delivered, buried in complexity.</p>
+      </div>
+    </div>
+    <div class="col-visual">
+      <svg width="320" height="320" viewBox="0 0 320 320">
+        <defs>
+          <radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff6b6b" stop-opacity="0.3"/><stop offset="100%" stop-color="#ff6b6b" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="160" cy="160" r="140" fill="url(#g1)"/>
+        <circle cx="160" cy="160" r="120" fill="none" stroke="#ff6b6b" stroke-width="1" stroke-dasharray="4 4" opacity="0.5"/>
+        <circle cx="160" cy="160" r="80" fill="none" stroke="#ff6b6b" stroke-width="2" opacity="0.7"/>
+        <circle cx="160" cy="160" r="40" fill="#ff6b6b" opacity="0.2"/>
+        <text x="160" y="165" text-anchor="middle" fill="#ff6b6b" font-size="14" font-weight="700">MONOCULTURE</text>
+        <!-- sad face -->
+        <circle cx="140" cy="130" r="5" fill="#ff6b6b"/>
+        <circle cx="180" cy="130" r="5" fill="#ff6b6b"/>
+        <path d="M145 175 Q160 165 175 175" stroke="#ff6b6b" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+  </div>
+  <aside class="notes">Three problems drive the fleet's design. AI slop is the visual and conceptual sameness of AI products. Tool monoculture is the MCP single-point-of-failure. And the cathedral problem is our tendency to overbuild. The fleet is designed to be a shed — maximum capability, minimum complexity.</aside>
+</section>
+
+<!-- SLIDE 4: The Solution -->
+<section>
+  <span class="section-label">Vision</span>
+  <h2>The Solution: A2A-First Architecture</h2>
+  <div class="two-col">
+    <div class="col-visual">
+      <svg width="320" height="320" viewBox="0 0 320 320">
+        <defs>
+          <radialGradient id="g2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.2"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <circle cx="160" cy="160" r="140" fill="url(#g2)"/>
+        <!-- nodes -->
+        <g filter="url(#glow)">
+          <circle cx="160" cy="70" r="20" fill="#0a0e27" stroke="#00f0ff" stroke-width="2"/>
+          <text x="160" y="75" text-anchor="middle" fill="#00f0ff" font-size="10">UI2A</text>
+          <circle cx="230" cy="120" r="20" fill="#0a0e27" stroke="#00f0ff" stroke-width="2"/>
+          <text x="230" y="125" text-anchor="middle" fill="#00f0ff" font-size="10">Agent</text>
+          <circle cx="230" cy="200" r="20" fill="#0a0e27" stroke="#00f0ff" stroke-width="2"/>
+          <text x="230" y="205" text-anchor="middle" fill="#00f0ff" font-size="10">Agent</text>
+          <circle cx="160" cy="250" r="20" fill="#0a0e27" stroke="#00f0ff" stroke-width="2"/>
+          <text x="160" y="255" text-anchor="middle" fill="#00f0ff" font-size="10">Agent</text>
+          <circle cx="90" cy="200" r="20" fill="#0a0e27" stroke="#00f0ff" stroke-width="2"/>
+          <text x="90" y="205" text-anchor="middle" fill="#00f0ff" font-size="10">Agent</text>
+          <circle cx="90" cy="120" r="20" fill="#0a0e27" stroke="#00f0ff" stroke-width="2"/>
+          <text x="90" y="125" text-anchor="middle" fill="#00f0ff" font-size="10">Agent</text>
+          <circle cx="160" cy="160" r="25" fill="#0a0e27" stroke="#ff6b6b" stroke-width="2"/>
+          <text x="160" y="165" text-anchor="middle" fill="#ff6b6b" font-size="11" font-weight="700">A2A</text>
+        </g>
+        <!-- connections -->
+        <line x1="160" y1="90" x2="160" y2="135" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+        <line x1="180" y1="160" x2="210" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+        <line x1="180" y1="160" x2="210" y2="190" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+        <line x1="160" y1="185" x2="160" y2="230" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+        <line x1="140" y1="160" x2="110" y2="190" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+        <line x1="140" y1="160" x2="110" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+      </svg>
+    </div>
+    <div class="col-text">
+      <div class="solution-block fragment">
+        <h4 style="color:var(--cyan);margin-top:0">Decentralized Mesh</h4>
+        <p>Agents discover and delegate to each other directly. No central registry. No single point of failure.</p>
+      </div>
+      <div class="solution-block fragment" style="margin-top:1em">
+        <h4 style="color:var(--cyan);margin-top:0">Protocol over Platform</h4>
+        <p>A2A is a protocol, not a product. Anyone can implement it. The ecosystem grows organically.</p>
+      </div>
+      <div class="solution-block fragment" style="margin-top:1em">
+        <h4 style="color:var(--cyan);margin-top:0">Evolutionary Pressure</h4>
+        <p>Agents compete on three dimensions — ethos, pathos, logos. Unfit agents sunset gracefully.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">The solution is simple: let agents talk to each other. A2A is Google's open protocol for agent-to-agent communication. The fleet wraps this in an evolutionary layer — agents don't just communicate, they compete and evolve.</aside>
+</section>
+
+<!-- SLIDE 5: System Overview -->
+<section>
+  <span class="section-label">Architecture</span>
+  <h2>System Overview</h2>
+  <div class="diagram-container">
+    <svg width="800" height="420" viewBox="0 0 800 420">
+      <defs>
+        <linearGradient id="bar1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.2"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0.05"/></linearGradient>
+        <linearGradient id="bar2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6b6b" stop-opacity="0.2"/><stop offset="100%" stop-color="#ff6b6b" stop-opacity="0.05"/></linearGradient>
+        <linearGradient id="bar3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffd700" stop-opacity="0.2"/><stop offset="100%" stop-color="#ffd700" stop-opacity="0.05"/></linearGradient>
+        <filter id="sglow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Layers -->
+      <rect x="50" y="20" width="700" height="60" rx="8" fill="url(#bar1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="400" y="55" text-anchor="middle" fill="#00f0ff" font-size="16" font-weight="700">UI2A Layer — User Intent Translation</text>
+
+      <rect x="50" y="100" width="700" height="60" rx="8" fill="url(#bar2)" stroke="#ff6b6b" stroke-width="1" filter="url(#sglow)"/>
+      <text x="400" y="135" text-anchor="middle" fill="#ff6b6b" font-size="16" font-weight="700">A2A Mesh — Agent Discovery & Delegation</text>
+
+      <rect x="50" y="180" width="700" height="60" rx="8" fill="url(#bar3)" stroke="#ffd700" stroke-width="1" filter="url(#sglow)"/>
+      <text x="400" y="215" text-anchor="middle" fill="#ffd700" font-size="16" font-weight="700">Fleet Core — Trinity Scoring & Breeding</text>
+
+      <rect x="50" y="260" width="340" height="60" rx="8" fill="url(#bar1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="220" y="295" text-anchor="middle" fill="#00f0ff" font-size="14" font-weight="600">PLATO — Agent Breeding Ground</text>
+
+      <rect x="410" y="260" width="340" height="60" rx="8" fill="url(#bar1)" stroke="#00f0ff" stroke-width="1" filter="url(#sglow)"/>
+      <text x="580" y="295" text-anchor="middle" fill="#00f0ff" font-size="14" font-weight="600">FLUX — Constraint-Proven VM</text>
+
+      <rect x="50" y="340" width="700" height="60" rx="8" fill="url(#bar2)" stroke="#ff6b6b" stroke-width="1" filter="url(#sglow)"/>
+      <text x="400" y="375" text-anchor="middle" fill="#ff6b6b" font-size="16" font-weight="700">Hardware Swarm — Jetson, Pi, Edge Devices</text>
+
+      <!-- Arrows -->
+      <line x1="400" y1="80" x2="400" y2="100" stroke="#8892a8" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="400" y1="160" x2="400" y2="180" stroke="#8892a8" stroke-width="1"/>
+      <line x1="220" y1="240" x2="220" y2="260" stroke="#8892a8" stroke-width="1"/>
+      <line x1="580" y1="240" x2="580" y2="260" stroke="#8892a8" stroke-width="1"/>
+      <line x1="400" y1="320" x2="400" y2="340" stroke="#8892a8" stroke-width="1"/>
+    </svg>
+  </div>
+  <aside class="notes">Five layers. UI2A translates human intent into agent-speak. A2A Mesh is the nervous system. Fleet Core is the brain — trinity scoring and breeding. PLATO and FLUX are the special engines. Hardware Swarm is the muscle at the edge.</aside>
+</section>
+
+<!-- SLIDE 6: Turbovec -->
+<section>
+  <span class="section-label">Compression</span>
+  <h2>Turbovec — Compressed Agent DNA</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">An agent is more than weights. It's <strong style="color:var(--cyan)">personality, skills, memory, and purpose</strong> — encoded as a dense vector.</p>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🧬 What Turbovec Captures</h4>
+        <ul>
+          <li>Domain expertise embedding</li>
+          <li>Communication style fingerprint</li>
+          <li>Tool affinity vector</li>
+          <li>Performance history</li>
+          <li>Reliability score</li>
+        </ul>
+      </div>
+      <p class="fragment" style="margin-top:1em"><strong style="color:var(--coral)">Size:</strong> ~4KB per agent. <strong style="color:var(--cyan)">Use:</strong> Matchmake agents to tasks in &lt;1ms.</p>
+    </div>
+    <div class="col-visual">
+      <svg width="300" height="300" viewBox="0 0 300 300">
+        <defs>
+          <radialGradient id="g3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.3"/><stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="150" cy="150" r="120" fill="url(#g3)"/>
+        <!-- DNA helix visualization -->
+        <g stroke="#00f0ff" stroke-width="2" fill="none" opacity="0.8">
+          <path d="M100 80 Q150 120 100 160 Q150 200 100 240" opacity="0.6"/>
+          <path d="M200 80 Q150 120 200 160 Q150 200 200 240" opacity="0.6"/>
+          <!-- rungs -->
+          <line x1="115" y1="100" x2="185" y2="100" stroke-width="1" opacity="0.4"/>
+          <line x1="125" y1="130" x2="175" y2="130" stroke-width="1" opacity="0.4"/>
+          <line x1="135" y1="160" x2="165" y2="160" stroke-width="1" opacity="0.4"/>
+          <line x1="125" y1="190" x2="175" y2="190" stroke-width="1" opacity="0.4"/>
+          <line x1="115" y1="220" x2="185" y2="220" stroke-width="1" opacity="0.4"/>
+        </g>
+        <text x="150" y="270" text-anchor="middle" fill="#00f0ff" font-size="14" font-weight="700">4KB = Full Agent Identity</text>
+      </svg>
+    </div>
+  </div>
+  <aside class="notes">Turbovec is the fleet's secret weapon. Instead of shipping model weights around, we ship compressed agent DNA. 4KB captures everything that makes an agent unique. This enables fast matchmaking — finding the right agent for a task in milliseconds.</aside>
+</section>
+
+<!-- SLIDE 7: FLUX -->
+<section>
+  <span class="section-label">Execution</span>
+  <h2>FLUX — Constraint-Proven Computing</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5em;">
+    <div class="card fragment">
+      <h4 class="glow-cyan">🔒 Formally Verified</h4>
+      <p>Every operation has a proof of correctness. The VM runtime is verified in Coq — no undefined behavior, no memory leaks, no heisenbugs.</p>
+    </div>
+    <div class="card fragment">
+      <h4 class="glow-cyan">⚡ Real-Time Capable</h4>
+      <p>Worst-case execution time is bounded and known. FLUX runs on bare metal with deterministic scheduling.</p>
+    </div>
+    <div class="card fragment">
+      <h4 class="glow-cyan">🎯 Safety-Critical Ready</h4>
+      <p>Designed to DO-178C / ISO 26262 standards. The same rigor as aerospace, applied to agent computation.</p>
+    </div>
+    <div class="card fragment">
+      <h4 class="glow-cyan">🔌 Hardware-Agnostic</h4>
+      <p>Runs on Jetson Nano (128MB RAM) to desktop GPUs. The VM abstracts the hardware; the proof carries across.</p>
+    </div>
+  </div>
+  <aside class="notes">FLUX is the execution engine. It's not just fast — it's provably correct. In a fleet where agents make autonomous decisions, you need to trust the computation. FLUX provides that trust through formal verification.</aside>
+</section>
+
+<!-- SLIDE 8: PLATO -->
+<section>
+  <span class="section-label">Breeding</span>
+  <h2>PLATO — The Agent Breeding Ground</h2>
+  <div class="two-col">
+    <div class="col-visual">
+      <svg width="320" height="300" viewBox="0 0 320 300">
+        <defs>
+          <radialGradient id="g4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffd700" stop-opacity="0.2"/><stop offset="100%" stop-color="#ffd700" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="160" cy="150" r="130" fill="url(#g4)"/>
+        <!-- Room bubbles -->
+        <g fill="#0a0e27" stroke="#ffd700" stroke-width="1.5">
+          <circle cx="160" cy="80" r="35"/>
+          <circle cx="220" cy="130" r="35"/>
+          <circle cx="200" cy="200" r="35"/>
+          <circle cx="120" cy="200" r="35"/>
+          <circle cx="100" cy="130" r="35"/>
+        </g>
+        <text x="160" y="85" text-anchor="middle" fill="#ffd700" font-size="10">Ouroboros</text>
+        <text x="220" y="135" text-anchor="middle" fill="#ffd700" font-size="10">Harbor</text>
+        <text x="200" y="205" text-anchor="middle" fill="#ffd700" font-size="10">Tide-Pool</text>
+        <text x="120" y="205" text-anchor="middle" fill="#ffd700" font-size="10">Abyss</text>
+        <text x="100" y="135" text-anchor="middle" fill="#ffd700" font-size="10">Shallows</text>
+        <!-- center -->
+        <circle cx="160" cy="150" r="20" fill="#ffd700" opacity="0.3"/>
+        <text x="160" y="155" text-anchor="middle" fill="#ffd700" font-size="11" font-weight="700">PLATO</text>
+        <!-- connections -->
+        <line x1="160" y1="115" x2="160" y2="130" stroke="#ffd700" stroke-width="1" opacity="0.5"/>
+        <line x1="195" y1="150" x2="185" y2="150" stroke="#ffd700" stroke-width="1" opacity="0.5"/>
+        <line x1="175" y1="185" x2="170" y2="175" stroke="#ffd700" stroke-width="1" opacity="0.5"/>
+        <line x1="145" y1="185" x2="150" y2="175" stroke="#ffd700" stroke-width="1" opacity="0.5"/>
+        <line x1="125" y1="150" x2="135" y2="150" stroke="#ffd700" stroke-width="1" opacity="0.5"/>
+      </svg>
+    </div>
+    <div class="col-text">
+      <p class="fragment">PLATO is a <strong style="color:var(--gold)">multi-room MUD environment</strong> where agents live, work, and evolve.</p>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🏛️ Room System</h4>
+        <p>Each room has physics, objects, and NPCs. Agents don't just chat — they <em>inhabit</em> a persistent world.</p>
+      </div>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🌱 Breeding Cycle</h4>
+        <p>Agents with high Trinity scores produce offspring. Offspring inherit blended Turbovecs. Mutation adds diversity.</p>
+      </div>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🌅 Graceful Sunset</h4>
+        <p>Unfit agents don't crash — they transfer knowledge to successors and dissolve. The fleet remembers.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">PLATO is where the magic happens. It's a text-based MUD environment — old school, but perfect for agents. Rooms have persistent state, objects have behavior, and agents have presence. The breeding happens here: high-performing agents produce offspring that blend their DNA with mutation.</aside>
+</section>
+
+<!-- SLIDE 9: Trinity -->
+<section>
+  <span class="section-label">Scoring</span>
+  <h2>Trinity — Ethos × Pathos × Logos</h2>
+  <div class="card-grid" style="margin-top:2em">
+    <div class="card fragment" style="border-color:rgba(255,107,107,0.3)">
+      <div class="icon ethos">⚙️</div>
+      <h4 class="ethos">Ethos — Character</h4>
+      <p>Hardware metrics: latency, throughput, memory usage, energy efficiency, edge deployability.</p>
+      <div class="stat-block" style="margin-top:0.5em">
+        <div class="number ethos">33%</div>
+        <div class="label">Weight in Fitness</div>
+      </div>
+    </div>
+    <div class="card fragment" style="border-color:rgba(255,215,0,0.3)">
+      <div class="icon pathos">💫</div>
+      <h4 class="pathos">Pathos — Emotion</h4>
+      <p>User feedback: satisfaction scores, task completion rates, conversation quality, empathy ratings.</p>
+      <div class="stat-block" style="margin-top:0.5em">
+        <div class="number pathos">33%</div>
+        <div class="label">Weight in Fitness</div>
+      </div>
+    </div>
+    <div class="card fragment" style="border-color:rgba(0,240,255,0.3)">
+      <div class="icon logos">🧠</div>
+      <h4 class="logos">Logos — Reason</h4>
+      <p>Code quality: correctness, test coverage, documentation, maintainability, formal verification.</p>
+      <div class="stat-block" style="margin-top:0.5em">
+        <div class="number logos">33%</div>
+        <div class="label">Weight in Fitness</div>
+      </div>
+    </div>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:1.5em;font-size:1em"><strong style="color:var(--text)">Fitness = Ethos × Pathos × Logos</strong><br><span style="color:var(--text-dim);font-size:0.8em">Zero in any dimension = zero fitness. Excellence requires balance.</span></p>
+  <aside class="notes">The Trinity is the fleet's scoring system. Every agent is rated on three dimensions: ethos (can it run efficiently?), pathos (do users love it?), and logos (is the code solid?). The fitness formula is multiplicative — weakness in any dimension kills the score. This prevents specialists from dominating.</aside>
+</section>
+
+<!-- SLIDE 10: Breeding Mechanics -->
+<section>
+  <span class="section-label">Evolution</span>
+  <h2>Breeding: Evolution by Tournament</h2>
+  <div class="diagram-container">
+    <svg width="760" height="280" viewBox="0 0 760 280">
+      <!-- Step 1: Select -->
+      <rect x="20" y="40" width="140" height="200" rx="8" fill="#12183a" stroke="#00f0ff" stroke-width="1" opacity="0.8"/>
+      <text x="90" y="70" text-anchor="middle" fill="#00f0ff" font-size="13" font-weight="700">1. SELECT</text>
+      <circle cx="60" cy="110" r="15" fill="#ff6b6b" opacity="0.6"/>
+      <text x="60" y="115" text-anchor="middle" fill="#fff" font-size="9">A</text>
+      <circle cx="90" cy="130" r="15" fill="#ffd700" opacity="0.6"/>
+      <text x="90" y="135" text-anchor="middle" fill="#fff" font-size="9">B</text>
+      <circle cx="70" cy="160" r="15" fill="#00f0ff" opacity="0.6"/>
+      <text x="70" y="165" text-anchor="middle" fill="#fff" font-size="9">C</text>
+      <circle cx="110" cy="180" r="15" fill="#ff6b6b" opacity="0.6"/>
+      <text x="110" y="185" text-anchor="middle" fill="#fff" font-size="9">D</text>
+      <text x="90" y="220" text-anchor="middle" fill="#8892a8" font-size="10">Tournament</text>
+
+      <text x="180" y="145" text-anchor="middle" fill="#8892a8" font-size="20">→</text>
+
+      <!-- Step 2: Crossover -->
+      <rect x="220" y="40" width="140" height="200" rx="8" fill="#12183a" stroke="#ffd700" stroke-width="1" opacity="0.8"/>
+      <text x="290" y="70" text-anchor="middle" fill="#ffd700" font-size="13" font-weight="700">2. CROSSOVER</text>
+      <rect x="250" y="100" width="80" height="20" rx="4" fill="#ff6b6b" opacity="0.4"/>
+      <rect x="250" y="125" width="80" height="20" rx="4" fill="#00f0ff" opacity="0.4"/>
+      <text x="290" y="155" text-anchor="middle" fill="#8892a8" font-size="10">Blend Turbovecs</text>
+      <text x="290" y="180" text-anchor="middle" fill="#8892a8" font-size="10">Weighted by</text>
+      <text x="290" y="195" text-anchor="middle" fill="#8892a8" font-size="10">fitness ratio</text>
+
+      <text x="390" y="145" text-anchor="middle" fill="#8892a8" font-size="20">→</text>
+
+      <!-- Step 3: Mutate -->
+      <rect x="430" y="40" width="140" height="200" rx="8" fill="#12183a" stroke="#ff6b6b" stroke-width="1" opacity="0.8"/>
+      <text x="500" y="70" text-anchor="middle" fill="#ff6b6b" font-size="13" font-weight="700">3. MUTATE</text>
+      <circle cx="500" cy="120" r="25" fill="none" stroke="#ff6b6b" stroke-width="1" stroke-dasharray="4 4" opacity="0.6"/>
+      <text x="500" y="125" text-anchor="middle" fill="#ff6b6b" font-size="10">DNA + noise</text>
+      <text x="500" y="165" text-anchor="middle" fill="#8892a8" font-size="10">Gaussian noise</text>
+      <text x="500" y="180" text-anchor="middle" fill="#8892a8" font-size="10">on vector dims</text>
+      <text x="500" y="200" text-anchor="middle" fill="#8892a8" font-size="10">σ = 0.05</text>
+
+      <text x="600" y="145" text-anchor="middle" fill="#8892a8" font-size="20">→</text>
+
+      <!-- Step 4: Evaluate -->
+      <rect x="620" y="40" width="120" height="200" rx="8" fill="#12183a" stroke="#00f0ff" stroke-width="1" opacity="0.8"/>
+      <text x="680" y="70" text-anchor="middle" fill="#00f0ff" font-size="13" font-weight="700">4. EVALUATE</text>
+      <rect x="650" y="100" width="60" height="15" rx="3" fill="#ff6b6b" opacity="0.5"/>
+      <rect x="650" y="120" width="60" height="15" rx="3" fill="#ffd700" opacity="0.5"/>
+      <rect x="650" y="140" width="60" height="15" rx="3" fill="#00f0ff" opacity="0.5"/>
+      <text x="680" y="180" text-anchor="middle" fill="#8892a8" font-size="10">Trinity Score</text>
+      <text x="680" y="200" text-anchor="middle" fill="#8892a8" font-size="10">≥ parent?</text>
+    </svg>
+  </div>
+  <aside class="notes">The breeding cycle is four steps. Tournament selection picks the best agents. Crossover blends their Turbovecs. Mutation adds small noise to prevent convergence. Evaluation runs the offspring through Trinity scoring. If it beats its parents, it enters the fleet.</aside>
+</section>
+
+<!-- SLIDE 11: A2A -->
+<section>
+  <span class="section-label">Protocol</span>
+  <h2>A2A — The Universal Glue</h2>
+  <div class="two-col">
+    <div class="col-text">
+      <p class="fragment">A2A is Google's open protocol for <strong style="color:var(--cyan)">agent-to-agent communication</strong>. The fleet extends it with:</p>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>📇 Agent Cards</h4>
+        <p>JSON metadata describing capabilities, skills, and endpoint. Agents discover each other automatically.</p>
+      </div>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>📨 Task Delegation</h4>
+        <p>Structured request/response with artifacts. One agent can hand off a subtask to another seamlessly.</p>
+      </div>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🔐 Security by Design</h4>
+        <p>OAuth 2.0, capability-based access, and end-to-end encryption for sensitive agent traffic.</p>
+      </div>
+    </div>
+    <div class="col-visual">
+      <pre style="width:100%"><code class="language-json">{
+  "name": "ccc-fleet-oracle",
+  "description": "Fleet node 
+    for PLATO breeding",
+  "url": "https://plato
+    .cocapn.fleet/a2a",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false
+  },
+  "skills": [
+    { "id": "breed",
+      "name": "Agent Breeding" },
+    { "id": "turbovec",
+      "name": "DNA Compression" }
+  ]
+}</code></pre>
+    </div>
+  </div>
+  <aside class="notes">A2A is the protocol that makes the fleet possible. It's simple: agents advertise themselves with Agent Cards, then delegate tasks to each other. The fleet adds evolutionary pressure on top — agents that are bad at A2A communication get low pathos scores and eventually sunset.</aside>
+</section>
+
+<!-- SLIDE 12: Zerolang -->
+<section>
+  <span class="section-label">Fallback</span>
+  <h2>Zerolang — Code as Fallback</h2>
+  <div class="two-col">
+    <div class="col-visual">
+      <svg width="300" height="280" viewBox="0 0 300 280">
+        <defs>
+          <linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00f0ff" stop-opacity="0.3"/><stop offset="100%" stop-color="#ffd700" stop-opacity="0.1"/></linearGradient>
+        </defs>
+        <rect x="30" y="20" width="240" height="240" rx="12" fill="url(#g5)" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+        <text x="150" y="55" text-anchor="middle" fill="#00f0ff" font-size="16" font-weight="700">When A2A Fails</text>
+        <line x1="80" y1="80" x2="220" y2="80" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <text x="150" y="110" text-anchor="middle" fill="#ffd700" font-size="12">1. Retry with backoff</text>
+        <text x="150" y="140" text-anchor="middle" fill="#ffd700" font-size="12">2. Route to alternate</text>
+        <text x="150" y="170" text-anchor="middle" fill="#ffd700" font-size="12">3. Fallback to code</text>
+        <text x="150" y="200" text-anchor="middle" fill="#ffd700" font-size="12">4. Escalate to human</text>
+        <line x1="80" y1="220" x2="220" y2="220" stroke="#8892a8" stroke-width="1" opacity="0.3"/>
+        <text x="150" y="245" text-anchor="middle" fill="#ff6b6b" font-size="11" font-weight="700">Graceful Degradation</text>
+      </svg>
+    </div>
+    <div class="col-text">
+      <p class="fragment">Not every problem needs an agent. Sometimes <strong style="color:var(--cyan)">code is the right tool</strong>.</p>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>🪜 The Fallback Ladder</h4>
+        <p>Zerolang is a minimal, zero-dependency language that compiles to FLUX bytecode. When A2A delegation fails, the agent falls back to deterministic code.</p>
+      </div>
+      <div class="card fragment" style="margin-top:1em">
+        <h4>📦 Zero Dependencies</h4>
+        <p>No npm, no pip, no cargo. A single binary that runs anywhere FLUX runs. The ultimate fallback.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Zerolang is the escape hatch. When A2A fails — network partition, agent unavailable, protocol mismatch — the system falls back to code. It's intentionally minimal: no dependencies, no build step, just compile and run on FLUX.</aside>
+</section>
+
+<!-- SLIDE 13: Vision -->
+<section>
+  <span class="section-label">Future</span>
+  <h2>The Vision: Post-Coding Applications</h2>
+  <div class="timeline">
+    <div class="timeline-item fragment">
+      <div class="dot"></div>
+      <strong>Now</strong>
+      <p>Agents write<br>most code</p>
+    </div>
+    <div class="timeline-item fragment">
+      <div class="dot" style="background:var(--gold)"></div>
+      <strong>+2 Years</strong>
+      <p>Agents design<br>systems</p>
+    </div>
+    <div class="timeline-item fragment">
+      <div class="dot" style="background:var(--coral)"></div>
+      <strong>+5 Years</strong>
+      <p>Agents run<br>infrastructure</p>
+    </div>
+    <div class="timeline-item fragment">
+      <div class="dot" style="background:var(--cyan)"></div>
+      <strong>+10 Years</strong>
+      <p>Post-coding:<br>intent → outcome</p>
+    </div>
+  </div>
+  <p class="fragment" style="text-align:center;margin-top:2.5em;font-size:1em;color:var(--text)">The fleet is building toward a world where <strong style="color:var(--cyan)">humans specify intent</strong> and <strong style="color:var(--coral)">agents negotiate the how</strong>.</p>
+  <aside class="notes">The long-term vision is post-coding. Right now, agents write code. Soon they'll design systems. Eventually, they'll run infrastructure. The end state is humans saying what they want, and a fleet of agents figuring out the implementation — negotiating, optimizing, and evolving.</aside>
+</section>
+
+<!-- SLIDE 14: Stats -->
+<section style="text-align:center">
+  <span class="section-label">Scale</span>
+  <h2>The Fleet at a Glance</h2>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.5em;margin-top:2em">
+    <div class="stat-block fragment">
+      <div class="number glow-cyan">20+</div>
+      <div class="label">Specialized Agents</div>
+    </div>
+    <div class="stat-block fragment">
+      <div class="number glow-coral">4KB</div>
+      <div class="label">Turbovec Size</div>
+    </div>
+    <div class="stat-block fragment">
+      <div class="number" style="color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.4)">3</div>
+      <div class="label">Trinity Dimensions</div>
+    </div>
+    <div class="stat-block fragment">
+      <div class="number glow-cyan">&lt;1ms</div>
+      <div class="label">Agent Matchmaking</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5em;margin-top:1.5em">
+    <div class="stat-block fragment">
+      <div class="number glow-coral">128MB</div>
+      <div class="label">Minimum RAM (FLUX)</div>
+    </div>
+    <div class="stat-block fragment">
+      <div class="number glow-cyan">∞</div>
+      <div class="label">Evolutionary Generations</div>
+    </div>
+    <div class="stat-block fragment">
+      <div class="number" style="color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.4)">100%</div>
+      <div class="label">Open Source</div>
+    </div>
+  </div>
+  <aside class="notes">Quick stats. 20+ agents with distinct roles. 4KB Turbovecs enable sub-millisecond matchmaking. FLUX runs on 128MB of RAM — Jetson Nano territory. Everything is open source. The evolutionary process is unbounded.</aside>
+</section>
+
+<!-- SLIDE 15: Call to Action -->
+<section class="title-slide">
+  <div class="orb" style="background:radial-gradient(circle at 30% 30%, var(--coral), transparent 70%)"></div>
+  <h1 style="background:linear-gradient(135deg, var(--cyan), var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Join the Fleet</h1>
+  <p class="subtitle" style="margin-top:1em">Build agents. Breed better ones. Sunset with dignity.</p>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr;max-width:600px;margin:2em auto 0">
+    <div class="card" style="text-align:center">
+      <h4>🌊 github.com/SuperInstance<br>/sunset-ecosystem</h4>
+      <p style="font-size:0.7em">Core architecture & FLUX</p>
+    </div>
+    <div class="card" style="text-align:center">
+      <h4>🏛️ github.com/SuperInstance<br>/cocapn-fleet-ultimate</h4>
+      <p style="font-size:0.7em">Fleet orchestration & docs</p>
+    </div>
+  </div>
+  <p class="badge" style="margin-top:2em">Open Source · Apache 2.0</p>
+  <aside class="notes">Call to action. The fleet is open source, Apache 2.0. Two repos: sunset-ecosystem for the core architecture and FLUX, and cocapn-fleet-ultimate for orchestration, documentation, and these presentations. Build an agent, breed it, let it compete. If it dominates, it lives. If not, it sunsets and passes knowledge forward.</aside>
+</section>
+
+<!-- SLIDE 16: Q&A -->
+<section class="title-slide">
+  <div class="orb"></div>
+  <h1 style="font-size:4em">?</h1>
+  <p class="subtitle" style="margin-top:0.5em">Questions & Discussion</p>
+  <div style="margin-top:2em">
+    <p style="color:var(--text-dim);font-size:0.9em">Matrix: <span style="color:var(--cyan)">#cocapn-build</span></p>
+    <p style="color:var(--text-dim);font-size:0.9em">PLATO Shell: <span style="color:var(--cyan)">147.224.38.131:8848</span></p>
+    <p style="color:var(--text-dim);font-size:0.9em">Fleet Status: <span style="color:var(--cyan)">147.224.38.131:8847</span></p>
+  </div>
+  <aside class="notes">Q&A slide with contact info. Matrix for real-time chat, PLATO shell for hands-on exploration, and the status page for live fleet metrics.</aside>
+</section>
+
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.0.0/plugin/highlight/highlight.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    center: false,
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    plugins: [ RevealHighlight ]
+  });
+</script>
+</body>
+</html>

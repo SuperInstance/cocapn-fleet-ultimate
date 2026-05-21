@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A2A Protocol — Cocapn Fleet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../common/styles.css">
+  <style>
+    .demo-container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .a2a-stage { display: flex; align-items: center; justify-content: space-between; margin: 3rem 0; flex-wrap: wrap; gap: 2rem; }
+    .agent-node { width: 160px; padding: 1.5rem; background: var(--surface); border-radius: 12px; text-align: center; border: 2px solid var(--border); transition: all 0.3s; position: relative; }
+    .agent-node.active { border-color: var(--cyan); box-shadow: 0 0 20px rgba(0, 240, 255, 0.2); }
+    .agent-node .agent-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .agent-node .agent-name { font-weight: 700; font-size: 0.95rem; }
+    .agent-node .agent-role { color: var(--muted); font-size: 0.8rem; margin-top: 0.3rem; }
+    .message-flow { flex: 1; min-width: 200px; height: 60px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .flow-line { position: absolute; width: 100%; height: 2px; background: var(--border); }
+    .flow-packet { position: absolute; width: 20px; height: 20px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 10px var(--cyan); animation: flow 2s ease-in-out infinite; }
+    @keyframes flow { 0% { left: 0; opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { left: calc(100% - 20px); opacity: 0; } }
+    .agent-card-preview { background: var(--surface); padding: 2rem; border-radius: 12px; margin: 2rem 0; }
+    .agent-card-preview pre { color: var(--cyan); font-size: 0.85rem; overflow-x: auto; }
+    .task-timeline { margin: 2rem 0; }
+    .timeline-step { display: flex; align-items: flex-start; gap: 1rem; margin: 1rem 0; padding: 1rem; background: var(--surface); border-radius: 8px; border-left: 3px solid var(--border); transition: all 0.3s; }
+    .timeline-step.active { border-left-color: var(--cyan); }
+    .timeline-step .step-num { width: 28px; height: 28px; background: var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+    .timeline-step.active .step-num { background: var(--cyan); color: var(--bg); }
+    .timeline-step .step-content { flex: 1; }
+    .timeline-step .step-title { font-weight: 600; margin-bottom: 0.3rem; }
+    .timeline-step .step-desc { color: var(--muted); font-size: 0.9rem; }
+    .controls { text-align: center; margin: 2rem 0; }
+    .btn { display: inline-block; padding: 0.75rem 2rem; background: var(--cyan); color: var(--bg); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3); }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+  <div class="demo-container">
+    <h1>🌐 A2A Protocol</h1>
+    <p style="color: var(--muted); margin-bottom: 2rem;">Agent-to-Agent communication. Every arrow is A2A. Every node has an Agent Card.</p>
+
+    <h2>Agent Mesh</h2>
+    <div class="a2a-stage" id="a2a-stage">
+      <div class="agent-node" id="node-user">
+        <div class="agent-icon">👤</div>
+        <div class="agent-name">User</div>
+        <div class="agent-role">Natural language</div>
+      </div>
+      <div class="message-flow">
+        <div class="flow-line"></div>
+        <div class="flow-packet" id="packet-1"></div>
+      </div>
+      <div class="agent-node" id="node-ui2a">
+        <div class="agent-icon">🖥️</div>
+        <div class="agent-name">UI2A</div>
+        <div class="agent-role">Interface agent</div>
+      </div>
+      <div class="message-flow">
+        <div class="flow-line"></div>
+        <div class="flow-packet" id="packet-2" style="animation-delay: 0.5s;"></div>
+      </div>
+      <div class="agent-node" id="node-orchestrator">
+        <div class="agent-icon">⚡</div>
+        <div class="agent-name">Orchestrator</div>
+        <div class="agent-role">Sequencing</div>
+      </div>
+    </div>
+
+    <h2>Agent Card</h2>
+    <div class="agent-card-preview">
+      <p style="margin-bottom: 1rem; color: var(--muted);">Published at <code>/.well-known/agent.json</code></p>
+      <pre id="agent-card-json">{
+  "name": "flux-constraint-checker",
+  "version": "3.0.0",
+  "capabilities": {
+    "check": {
+      "description": "Verify constraints against bounds",
+      "input": { "type": "ConstraintSpec" },
+      "output": { "type": "ProofCertificate" }
+    }
+  },
+  "endpoint": "https://flux.fleet.local",
+  "authentication": { "scheme": "x509" }
+}</pre>
+    </div>
+
+    <h2>Task Delegation Flow</h2>
+    <div class="task-timeline" id="task-timeline">
+      <div class="timeline-step" id="step-1">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Discover</div>
+          <div class="step-desc">Client fetches Agent Card from <code>/.well-known/agent.json</code></div>
+        </div>
+      </div>
+      <div class="timeline-step" id="step-2">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Send Task</div>
+          <div class="step-desc">POST to <code>/tasks/send</code> with task specification</div>
+        </div>
+      </div>
+      <div class="timeline-step" id="step-3">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Process</div>
+          <div class="step-desc">Agent processes task, generates artefacts</div>
+        </div>
+      </div>
+      <div class="timeline-step" id="step-4">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Receive Result</div>
+          <div class="step-desc">JSON response with status, artefacts, and proof certificates</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="animateFlow()">▶️ Animate Task Flow</button>
+    </div>
+  </div>
+
+  <script src="../common/nav.js"></script>
+  <script>
+    let currentStep = 0;
+    const steps = ['step-1', 'step-2', 'step-3', 'step-4'];
+    const nodes = ['node-user', 'node-ui2a', 'node-orchestrator'];
+
+    function animateFlow() {
+      // Reset
+      steps.forEach(id => document.getElementById(id).classList.remove('active'));
+      nodes.forEach(id => document.getElementById(id).classList.remove('active'));
+      currentStep = 0;
+
+      // Animate through steps
+      const interval = setInterval(() => {
+        if (currentStep < steps.length) {
+          document.getElementById(steps[currentStep]).classList.add('active');
+          if (currentStep < nodes.length) {
+            document.getElementById(nodes[currentStep]).classList.add('active');
+          }
+          currentStep++;
+        } else {
+          clearInterval(interval);
+          setTimeout(() => {
+            steps.forEach(id => document.getElementById(id).classList.remove('active'));
+            nodes.forEach(id => document.getElementById(id).classList.remove('active'));
+          }, 2000);
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
